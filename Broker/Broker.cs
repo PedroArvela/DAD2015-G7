@@ -1,9 +1,9 @@
-﻿using System;
-using System.Collections;
+﻿using SESDADLib;
+using System;
 using System.Collections.Generic;
 
 namespace Broker {
-    public class Broker : MarshalByRefObject {
+    public class Broker : MarshalByRefObject, IBroker {
         private bool routingPolicy;
         private string routingType;
         private List<string> sites;
@@ -29,11 +29,11 @@ namespace Broker {
             return (delayed = !delayed);
         }
 
-        public void newPublication(String name, String content) {
+        public void newPublication(Publication pub) {
             //TODO: something
         }
 
-        public void sendPublication(String name, String content) {
+        public void sendPublication(Publication pub) {
             //TODO: something
         }
     }

@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using SESDADLib;
+using System;
 
 namespace Publisher {
     class Publisher {
@@ -19,7 +16,7 @@ namespace Publisher {
             //TODO: something
         }
 
-        public void Publish(int numberOfEvents, String topicName, int intervalMS, String content) {
+        public void Publish(Publication pub) {
             //TODO: something
         }
     }

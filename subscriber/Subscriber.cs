@@ -1,13 +1,12 @@
-﻿using System;
+﻿using SESDADLib;
+using System;
 using System.Collections.Generic;
-using SESDADLib;
 
 namespace Subscriber {
     class Subscriber : MarshalByRefObject, ISubscriber {
         private string name;
         private string processURL;
         private List<Publication> subscriptions;
-        //TODO: create type for subscriptions
 
         public Subscriber() {
             //TODO: something
