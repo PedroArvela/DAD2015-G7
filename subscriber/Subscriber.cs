@@ -1,27 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
+using SESDADLib;
 
 namespace Subscriber {
-    class Subscriber : MarshalByRefObject {
+    class Subscriber : MarshalByRefObject, ISubscriber {
         private string name;
         private string processURL;
-        private List<string> subscriptions;
+        private List<Publication> subscriptions;
         //TODO: create type for subscriptions
 
         public Subscriber() {
             //TODO: something
         }
 
-        public void subscribe(String site) {
+        public void subscribe(string topic) {
             //TODO: something
         }
 
-        public void unSubscribe(String site) {
+        public void unsubscribe(string topic) {
             //TODO: something
         }
 
         // Callback for brokers to use to send the data
-        public void newPublication(string topic, string content) {
+        public void newPublication(Publication pub) {
             //TODO: something
         }
     }
