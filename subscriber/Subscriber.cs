@@ -8,10 +8,6 @@ namespace Subscriber {
         private string processURL;
         private List<Publication> subscriptions;
 
-        static void Main(string[] args) {
-            //TODO: Something
-        }
-
         public Subscriber() {
             //TODO: something
         }
