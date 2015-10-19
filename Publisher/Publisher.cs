@@ -2,7 +2,7 @@
 using System;
 
 namespace Publisher {
-    class Publisher {
+    public class Publisher {
         static void Main(string[] args) {
             //TODO: something
         }

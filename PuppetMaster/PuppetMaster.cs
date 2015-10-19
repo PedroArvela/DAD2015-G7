@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 using Broker;
+using Publisher;
+using Subscriber;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,7 +15,7 @@ namespace PuppetMaster
     public class PuppetMaster {
         //Key = site
         //value = mothersite
-        private Dictionary<String, String> siteMap;
+        private Dictionary<String, String> siteMap = new Dictionary<string, string>();
         private ArrayList brokers = new ArrayList();
         private ArrayList subscribers = new ArrayList();
         private ArrayList publishers = new ArrayList();
@@ -25,14 +27,22 @@ namespace PuppetMaster
 
         static void Main(string[] args) {
             //TODO: something
-            Console.WriteLine("Hello world!");
+            PuppetMaster master = new PuppetMaster();
+            Console.WriteLine("Welcome!");
+            while (true) {
+                Console.Write("#: ");
+                String input = Console.ReadLine();
+                master.processCommand(input);
+            } 
+        }
+
+        public PuppetMaster() {
+
         }
 
         public PuppetMaster(String configFilePath) {
             StreamReader configStream = new StreamReader(configFilePath);
             String inString;
-            siteMap = new Dictionary<string, string>();
-
 
             while ((inString = configStream.ReadLine()) != null) {
                 this.processCommand(inString);
@@ -41,19 +51,19 @@ namespace PuppetMaster
         }
 
         public void processCommand(String command) {
-            String sitePatern = "^Site [Aa-Zz0-9]+ Parent (none|[Aa-Zz0-9]+)\b";
-            String processPatern = "^Process [Aa-Zz0-9]+ IS (broker|publisher|subscriber) On [Aa-Zz0-9]+ URL tcp://([0-9]+\\.){3}[0-9]:[0-9]{4}/[Aa-Zz]+\b";
-            String routingPatern = "^RoutingPolicy(flooding|filter)\b";
-            String orderingPatern = "^Ordering (NO|FIFO|TOTAL)";
-            String subPatern = "^Subscriber [Aa-Zz0-9]+ Subscribe [Aa-Zz0-9]+\b";
-            String unSubPatern = "^Subscriber [Aa-Zz0-9]+ Unsubscribe [Aa-Zz0-9]+\b";
-            String publisherPatern = "^Publisher [Aa-Zz0-9]+ Publish [0-9]+ Ontopic [Aa-Zz0-9]+ Interval [0-9]+\b";
-            String statusPatern = "^Status\b";
-            String carshPatern = "^Crash [Aa-Zz0-9]+\b";
-            String freezePatern = "^Freeze [Aa-Zz0-9]+\b";
-            String unfreezePatern = "^Unfreeze [Aa-Zz0-9]+\b";
-            String waitPatern = "^Wait [0-9]+\b";
-            String loggingPatern = "^LogginLevel (full|light)\b";
+            String sitePatern = "^Site\\s[A-Za-z0-9]+\\sParent\\s[A-Za-z0-9]+$";
+            String processPatern = "^Process\\s[A-Za-z0-9]+\\sIS\\s(broker|publisher|subscriber)\\sOn\\s[A-Za-z0-9]+\\sURL\\stcp://([0-9]+\\.){3}[0-9]:[0-9]{4}/[A-Za-z]+$";
+            String routingPatern = "^RoutingPolicy(flooding|filter)$";
+            String orderingPatern = "^Ordering\\s(NO|FIFO|TOTAL)$";
+            String subPatern = "^Subscriber\\s[A-Za-z0-9]+\\sSubscribe\\s[A-Za-z0-9]+$";
+            String unSubPatern = "^Subscriber\\s[A-Za-z0-9]+\\sUnsubscribe\\s[A-Za-z0-9]+$";
+            String publisherPatern = "^Publisher\\s[A-Za-z0-9]+\\sPublish\\s[0-9]+\\sOntopic\\s[A-Za-z0-9]+\\sInterval\\s[0-9]+$";
+            String statusPatern = "^Status$";
+            String carshPatern = "^Crash\\s[A-Za-z0-9]+$";
+            String freezePatern = "^Freeze\\s[A-Za-z0-9]+$";
+            String unfreezePatern = "^Unfreeze\\s[A-Za-z0-9]+$";
+            String waitPatern = "^Wait\\s[0-9]+$";
+            String loggingPatern = "^LogginLevel\\s(full|light)$";
 
             ArrayList regs = new ArrayList();
             Match m;
@@ -74,14 +84,16 @@ namespace PuppetMaster
             regs.Add(new Regex(loggingPatern, RegexOptions.None));
             
             foreach (Regex r in regs) {
+                Console.WriteLine("Atempting rule: " + r.ToString());
                 m = r.Match(command);
                 if (m.Success) {
+                    Console.WriteLine("Command Matched to: " + r.ToString());
                     parse = new ArrayList(command.Split(' '));
                     break;
                 }
             }
-
-            String[] parsed = (String[])parse.ToArray();
+            
+            string[] parsed = Array.ConvertAll<object, string>(parse.ToArray(), System.Convert.ToString);
             if (parse.Count > 0) {
                 switch (parsed[0]) {
                     case "Site":
@@ -111,14 +123,19 @@ namespace PuppetMaster
                         this.Status();
                         break;
                     case "Crash":
+                        this.crash(parsed[1]);
                         break;
                     case "Freeze":
+                        this.freeze(parsed[1]);
                         break;
                     case "Unfreeze":
+                        this.unFreeze(parsed[1]);
                         break;
                     case "Wait":
+                        this.wait(Int32.Parse(parsed[1]));
                         break;
                     case "LogginLevel":
+                        this.LogLevel(parsed[1]);
                         break;
                 }
             }
@@ -127,8 +144,37 @@ namespace PuppetMaster
             }
         }
 
-        public void createProcess(String processName, String type, String Site, String Url) {
+        public void importConfig(String configFilePath) {
+            StreamReader configStream = new StreamReader(configFilePath);
+            String inString;
+            this.wipeNetwork();
 
+            while ((inString = configStream.ReadLine()) != null)
+            {
+                this.processCommand(inString);
+            }
+            configStream.Close();
+        }
+        public void showSiteTree() {
+            foreach (String s in siteMap.Keys) {
+                Console.WriteLine("Site: " + s + " --- Parent: " + siteMap[s]);
+            }
+        }
+        public void wipeNetwork() {
+            //TODO: something
+        }
+        public void createProcess(String processName, String type, String Site, String Url) {
+            switch (type) {
+                case "broker":
+                    brokers.Add(new Broker.Broker(Url, Url, Url, 0, routingLevel, true));
+                    break;
+                case "publisher":
+                    publishers.Add(new Publisher.Publisher());
+                    break;
+                case "subscriber":
+                    subscribers.Add(new Subscriber.Subscriber());
+                    break;
+            }
         }
 
         public void Subscribe(String processName, String topicName) {
@@ -141,7 +187,16 @@ namespace PuppetMaster
             //TODO: something
         }
         public void LogLevel(String type) {
-            //TODO: something
+            if (type.Equals("full"))
+            {
+                loggingLevel = true;
+            }
+            else {
+                loggingLevel = false;
+            }
+        }
+        public void changeLogFile(String logfilePath) {
+            this.logFile = logfilePath;
         }
         public void Status() {
             //TODO: something
@@ -149,13 +204,19 @@ namespace PuppetMaster
         public void crash() {
             //TODO: something
         }
-        public void freeze() {
+        public void freeze(String processName) {
            //TODO: something
         }
-        public void unFreeze() {
+        public void unFreeze(String processName) {
             //TODO: something
         }
         public void wait(int time) {
+            System.Threading.Thread.Sleep(time);
+        }
+        public void crash(String processName) {
+            //TODO: something
+        }
+        public void logginLevel(String level) {
             //TODO: something
         }
     }
