@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Broker {
-    class Broker {
+    public class Broker {
         static void Main(string[] args) {
             //TODO: something
         }

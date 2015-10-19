@@ -3,16 +3,25 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
+using Broker;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace PuppetMaster
 {
-    class PuppetMaster {
+    public class PuppetMaster {
         //Key = site
         //value = mothersite
         private Dictionary<String, String> siteMap;
+        private ArrayList brokers = new ArrayList();
+        private ArrayList subscribers = new ArrayList();
+        private ArrayList publishers = new ArrayList();
+
+        private bool loggingLevel = false;
+        private String logFile = ".\\Logfile.txt";
+        private String routingLevel = "Flooding";
+        private String orderLevel = "NO";
 
         static void Main(string[] args) {
             //TODO: something
@@ -79,16 +88,27 @@ namespace PuppetMaster
                         siteMap.Add(parsed[1], parsed[3]);
                         break;
                     case "Process":
+                        this.createProcess(parsed[1], parsed[3], parsed[5], parsed[7]);
                         break;
                     case "RoutingPolicy":
+                        routingLevel = parsed[1];
                         break;
                     case "Ordering":
+                        orderLevel = parsed[1];
                         break;
                     case "Subscriber":
+                        if (parsed[2].Equals("Subscribe"))
+                        {
+                            this.UnSubscribe(parsed[1], parsed[3]);
+                        } else {
+                            this.Subscribe(parsed[1], parsed[3]);
+                        }
                         break;
                     case "Publisher":
+                        this.Publish(parsed[1], Int32.Parse(parsed[3]), parsed[5], Int32.Parse(parsed[7]));
                         break;
                     case "Status":
+                        this.Status();
                         break;
                     case "Crash":
                         break;
@@ -107,6 +127,10 @@ namespace PuppetMaster
             }
         }
 
+        public void createProcess(String processName, String type, String Site, String Url) {
+
+        }
+
         public void Subscribe(String processName, String topicName) {
             //TODO: something
         }
@@ -120,6 +144,18 @@ namespace PuppetMaster
             //TODO: something
         }
         public void Status() {
+            //TODO: something
+        }
+        public void crash() {
+            //TODO: something
+        }
+        public void freeze() {
+           //TODO: something
+        }
+        public void unFreeze() {
+            //TODO: something
+        }
+        public void wait(int time) {
             //TODO: something
         }
     }
