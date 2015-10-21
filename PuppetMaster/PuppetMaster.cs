@@ -13,12 +13,50 @@ using System.Threading.Tasks;
 namespace PuppetMaster
 {
     public class PuppetMaster {
+        private class element {
+            private string _site;
+            private ArrayList _brokers = new ArrayList();
+            private ArrayList _subscribers = new ArrayList();
+            private ArrayList _publishers = new ArrayList();
+
+            private element _parent;
+            private ArrayList _childs = new ArrayList();
+
+            public element(String siteURL, element parent) {
+                _site = siteURL;
+                _parent = parent;
+            }
+
+            public string getSite() { return _site; }
+            public ArrayList getBrokers() { return _brokers; }
+            public ArrayList getSubscribers() { return _subscribers; }
+            public ArrayList getPublishers() { return _publishers; }
+            
+            public element getParent() { return _parent; }
+            public ArrayList getChilds() { return _childs; }
+
+            public ArrayList getParentUrls() {
+                ArrayList answer = new ArrayList();
+                ArrayList parentBrokers = _parent.getBrokers();
+
+                foreach (Broker.Broker b in parentBrokers) {
+                    foreach (String url in b.getParentURL()) {
+                        answer.Add(url);
+                    }
+                }
+                return answer;
+            }
+
+            public void addChild(element c) { _childs.Add(c); }
+            public void addBroker(Broker.Broker b) { _brokers.Add(b); }
+            public void addSubscriber(Subscriber.Subscriber s) { _subscribers.Add(s); }
+            public void addPublisher(Publisher.Publisher p) { _publishers.Add(p); }
+        }
+
         //Key = site
         //value = mothersite
-        private Dictionary<String, String> siteMap = new Dictionary<string, string>();
-        private ArrayList brokers = new ArrayList();
-        private ArrayList subscribers = new ArrayList();
-        private ArrayList publishers = new ArrayList();
+        private element networkTree; //holds tree for elements in network
+        private ArrayList networkList; //holds list of tree elements in network for fast access
 
         private bool loggingLevel = false;
         private String logFile = ".\\Logfile.txt";
@@ -48,6 +86,48 @@ namespace PuppetMaster
                 this.processCommand(inString);
             }
             configStream.Close();
+        }
+
+        private element findElement(element tree, string Site) {
+            element answer;
+            //initial case
+            if (tree.getSite().Equals(Site)) {
+                return tree;
+            }
+            //if no children
+            else if (tree.getChilds().Count == 0) {
+                if (tree.getSite().Equals(Site)) {
+                    return tree;
+                } else {
+                    return null;
+                }
+            }
+            //if has children
+            foreach (element e in tree.getChilds()) {
+                answer = this.findElement(e, Site);
+                if (answer != null) {
+                    return answer;
+                }
+            }
+            return null;
+        }
+
+        private element addElement(String Site, string parentSite) {
+            element existant = this.findElement(networkTree, Site);
+            element parent = this.findElement(networkTree, parentSite);
+
+            if (parentSite.Equals("none") && existant == null && parent == null) {
+                networkTree = new element(Site, null);
+                return networkTree;
+            }        
+            if (existant == null) {
+                existant = new element(Site, parent);
+                parent.addChild(existant);
+                return existant;
+            } else {
+                Console.WriteLine("Insertion fail, element already in list");
+                return null;
+            }
         }
 
         public void processCommand(String command) {
@@ -97,7 +177,7 @@ namespace PuppetMaster
             if (parse.Count > 0) {
                 switch (parsed[0]) {
                     case "Site":
-                        siteMap.Add(parsed[1], parsed[3]);
+                        this.addElement(parsed[1], parsed[3]);
                         break;
                     case "Process":
                         this.createProcess(parsed[1], parsed[3], parsed[5], parsed[7]);
@@ -164,9 +244,13 @@ namespace PuppetMaster
             //TODO: something
         }
         public void createProcess(String processName, String type, String Site, String Url) {
+            element targetSite = this.findElement(networkTree, Site);
+            Console.WriteLine("Create Process Request");
+
             switch (type) {
                 case "broker":
-                    brokers.Add(new Broker.Broker(Url, Url, Url, 0, routingLevel, true));
+                    Broker.Broker b = new Broker.Broker(processName, Url, Site, "flooding");
+                    
                     break;
                 case "publisher":
                     publishers.Add(new Publisher.Publisher());
@@ -199,24 +283,27 @@ namespace PuppetMaster
             this.logFile = logfilePath;
         }
         public void Status() {
-            //TODO: something
-        }
-        public void crash() {
+            Console.WriteLine("Status request");
             //TODO: something
         }
         public void freeze(String processName) {
+            Console.WriteLine("Freeze Request");
            //TODO: something
         }
         public void unFreeze(String processName) {
+            Console.WriteLine("UnFreeze Request");
             //TODO: something
         }
         public void wait(int time) {
+            Console.WriteLine("Wait Request");
             System.Threading.Thread.Sleep(time);
         }
         public void crash(String processName) {
+            Console.WriteLine("Crash Resquest");
             //TODO: something
         }
         public void logginLevel(String level) {
+            Console.WriteLine("Logging Request");
             //TODO: something
         }
     }

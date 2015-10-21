@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 
 namespace Subscriber {
-    class Subscriber : MarshalByRefObject, ISubscriber {
+    public class Subscriber : MarshalByRefObject, ISubscriber {
         private string name;
         private string processURL;
         private List<Publication> subscriptions;
