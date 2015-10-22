@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
+using Element;
 using Broker;
 using Publisher;
 using Subscriber;
@@ -13,50 +14,9 @@ using System.Threading.Tasks;
 namespace PuppetMaster
 {
     public class PuppetMaster {
-        private class element {
-            private string _site;
-            private ArrayList _brokers = new ArrayList();
-            private ArrayList _subscribers = new ArrayList();
-            private ArrayList _publishers = new ArrayList();
-
-            private element _parent;
-            private ArrayList _childs = new ArrayList();
-
-            public element(String siteURL, element parent) {
-                _site = siteURL;
-                _parent = parent;
-            }
-
-            public string getSite() { return _site; }
-            public ArrayList getBrokers() { return _brokers; }
-            public ArrayList getSubscribers() { return _subscribers; }
-            public ArrayList getPublishers() { return _publishers; }
-            
-            public element getParent() { return _parent; }
-            public ArrayList getChilds() { return _childs; }
-
-            public ArrayList getParentUrls() {
-                ArrayList answer = new ArrayList();
-                ArrayList parentBrokers = _parent.getBrokers();
-
-                foreach (Broker.Broker b in parentBrokers) {
-                    foreach (String url in b.getParentURL()) {
-                        answer.Add(url);
-                    }
-                }
-                return answer;
-            }
-
-            public void addChild(element c) { _childs.Add(c); }
-            public void addBroker(Broker.Broker b) { _brokers.Add(b); }
-            public void addSubscriber(Subscriber.Subscriber s) { _subscribers.Add(s); }
-            public void addPublisher(Publisher.Publisher p) { _publishers.Add(p); }
-        }
-
         //Key = site
         //value = mothersite
-        private element networkTree; //holds tree for elements in network
-        private ArrayList networkList; //holds list of tree elements in network for fast access
+        private element networkTree = null; //holds tree for elements in network
 
         private bool loggingLevel = false;
         private String logFile = ".\\Logfile.txt";
@@ -66,11 +26,13 @@ namespace PuppetMaster
         static void Main(string[] args) {
             //TODO: something
             PuppetMaster master = new PuppetMaster();
+            bool open = true;
+
             Console.WriteLine("Welcome!");
-            while (true) {
+            while (open) {
                 Console.Write("#: ");
                 String input = Console.ReadLine();
-                master.processCommand(input);
+                open = master.processCommand(input);
             } 
         }
 
@@ -92,13 +54,16 @@ namespace PuppetMaster
             element answer;
             //initial case
             if (tree.getSite().Equals(Site)) {
+                Console.WriteLine("Found node " + Site);
                 return tree;
             }
             //if no children
             else if (tree.getChilds().Count == 0) {
                 if (tree.getSite().Equals(Site)) {
+                    Console.WriteLine("Found node " + Site);
                     return tree;
                 } else {
+                    Console.WriteLine("!FOUND " + Site);
                     return null;
                 }
             }
@@ -106,33 +71,27 @@ namespace PuppetMaster
             foreach (element e in tree.getChilds()) {
                 answer = this.findElement(e, Site);
                 if (answer != null) {
+                    Console.WriteLine("Found node " + Site);
                     return answer;
                 }
             }
+            Console.WriteLine("!FOUND " + Site);
             return null;
         }
 
-        private element addElement(String Site, string parentSite) {
-            element existant = this.findElement(networkTree, Site);
-            element parent = this.findElement(networkTree, parentSite);
-
-            if (parentSite.Equals("none") && existant == null && parent == null) {
-                networkTree = new element(Site, null);
-                return networkTree;
-            }        
-            if (existant == null) {
-                existant = new element(Site, parent);
-                parent.addChild(existant);
-                return existant;
-            } else {
-                Console.WriteLine("Insertion fail, element already in list");
-                return null;
+        private void addElement(String site, string parentSite) {
+            element parent;
+            if (parentSite.Equals("none") && networkTree == null) {
+                networkTree = new element(site, null);
+            } else if ((parent = this.findElement(networkTree, parentSite)) != null){
+                parent.addChild(new element(site, parent));
             }
+            this.showSiteTree(networkTree);
         }
 
-        public void processCommand(String command) {
+        public bool processCommand(String command) {
             String sitePatern = "^Site\\s[A-Za-z0-9]+\\sParent\\s[A-Za-z0-9]+$";
-            String processPatern = "^Process\\s[A-Za-z0-9]+\\sIS\\s(broker|publisher|subscriber)\\sOn\\s[A-Za-z0-9]+\\sURL\\stcp://([0-9]+\\.){3}[0-9]:[0-9]{4}/[A-Za-z]+$";
+            String processPatern = "^Process\\s[A-Za-z0-9]+\\sIs\\s(broker|publisher|subscriber)\\sOn\\s[A-Za-z0-9]+\\sURL\\stcp://([0-9]+\\.){3}[0-9]:[0-9]{4}/[A-Za-z]+$";
             String routingPatern = "^RoutingPolicy(flooding|filter)$";
             String orderingPatern = "^Ordering\\s(NO|FIFO|TOTAL)$";
             String subPatern = "^Subscriber\\s[A-Za-z0-9]+\\sSubscribe\\s[A-Za-z0-9]+$";
@@ -144,6 +103,8 @@ namespace PuppetMaster
             String unfreezePatern = "^Unfreeze\\s[A-Za-z0-9]+$";
             String waitPatern = "^Wait\\s[0-9]+$";
             String loggingPatern = "^LogginLevel\\s(full|light)$";
+            String showPatern = "^Show$";
+            String quitPatern = "^Quit|Exit$";
 
             ArrayList regs = new ArrayList();
             Match m;
@@ -162,7 +123,9 @@ namespace PuppetMaster
             regs.Add(new Regex(unfreezePatern, RegexOptions.None));
             regs.Add(new Regex(waitPatern, RegexOptions.None));
             regs.Add(new Regex(loggingPatern, RegexOptions.None));
-            
+            regs.Add(new Regex(showPatern, RegexOptions.None));
+            regs.Add(new Regex(quitPatern, RegexOptions.None));
+
             foreach (Regex r in regs) {
                 Console.WriteLine("Atempting rule: " + r.ToString());
                 m = r.Match(command);
@@ -217,11 +180,19 @@ namespace PuppetMaster
                     case "LogginLevel":
                         this.LogLevel(parsed[1]);
                         break;
+                    case "Show":
+                        this.showSiteTree(networkTree);
+                        break;
+                    case "Exit":
+                        return false;
+                    case "Quit":
+                        return false;
                 }
             }
             else {
-                throw new Exception();
+                Console.Write("Command: \"" + command + "\"" + " is not a recognized command...\n");
             }
+            return true;
         }
 
         public void importConfig(String configFilePath) {
@@ -235,9 +206,23 @@ namespace PuppetMaster
             }
             configStream.Close();
         }
-        public void showSiteTree() {
-            foreach (String s in siteMap.Keys) {
-                Console.WriteLine("Site: " + s + " --- Parent: " + siteMap[s]);
+        public void showSiteTree(element tree) {
+            Console.WriteLine("SHOWING SITE: " + tree.getSite());
+            if (tree != null) {
+                if (tree.getParent() == null) {
+                    Console.WriteLine("\tParent: none");
+                } else {
+                    Console.WriteLine("\tParent: " + tree.getParent().getSite());
+                }
+                Console.WriteLine("\tRegistered Brokers: " + tree.getBrokers().Count);
+                Console.WriteLine("\tRegistered Subscribers: " + tree.getSubscribers().Count);
+                Console.WriteLine("\tRegistered Publishers: " + tree.getPublishers().Count);
+                foreach (Broker.Broker b in tree.getBrokers()) {
+                    b.printBroker();
+                }                
+                foreach (element c in tree.getChilds()) {
+                    this.showSiteTree(c);
+                }
             }
         }
         public void wipeNetwork() {
@@ -245,19 +230,31 @@ namespace PuppetMaster
         }
         public void createProcess(String processName, String type, String Site, String Url) {
             element targetSite = this.findElement(networkTree, Site);
+            Broker.Broker b;
+
             Console.WriteLine("Create Process Request");
 
-            switch (type) {
-                case "broker":
-                    Broker.Broker b = new Broker.Broker(processName, Url, Site, "flooding");
-                    
-                    break;
-                case "publisher":
-                    publishers.Add(new Publisher.Publisher());
-                    break;
-                case "subscriber":
-                    subscribers.Add(new Subscriber.Subscriber());
-                    break;
+            if (targetSite == null) {
+                Console.WriteLine("No target site found...");
+            } else {
+                switch (type) {
+                    case "broker":
+                        b = new Broker.Broker(processName, Url, Site, "flooding");
+                        if (targetSite.getParent() != null) {
+                            foreach(string url in targetSite.getParentUrls()) {
+                                b.addParentUrl(url);
+                            }
+                            foreach (Broker.Broker parentBroker in targetSite.getParent().getBrokers()) {
+                                parentBroker.addChildUrl(Url);
+                            }
+                        }
+                        targetSite.addBroker(b);
+                        break;
+                    case "publisher":
+                        break;
+                    case "subscriber":
+                        break;
+                }
             }
         }
 

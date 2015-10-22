@@ -1,8 +1,9 @@
 ﻿using SESDADLib;
 using System;
+using System.Collections.Generic;
 
-namespace Publisher {
-    public class Publisher {
+namespace Publisher{
+    public class Publisher{
         static void Main(string[] args) {
             //TODO: something
         }
@@ -19,5 +20,8 @@ namespace Publisher {
         public void Publish(Publication pub) {
             //TODO: something
         }
+    }
+
+    internal interface IPublisher {
     }
 }

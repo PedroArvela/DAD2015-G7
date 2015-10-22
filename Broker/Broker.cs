@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using SESDADLib;
 
 namespace Broker {
-    public class Broker {
+    public class Broker : MarshalByRefObject, IBroker {
         private bool _routingPolicy;
 
         private string _processName;
@@ -51,14 +52,30 @@ namespace Broker {
             _delayTime = time;
             return (_delayed = !_delayed);
         }
-        /*
+
+        public void printBroker() {
+            string print = "\tBroker: " + _processName + "for " + _site + " active on " + _processURL + "\n";
+            print += "\tParent Broker URL(s):\n";
+            foreach (string purl in _parentProcessesURL) {
+                print += "\t\t" + purl + "\n";
+            }
+            print += "\tChild Broker URL(s):\n";
+            foreach (string curl in _childProcessesURL) {
+                print += "\t\t" + curl + "\n";
+            }
+            print += "\tTopic(s):\n";
+            foreach (string topic in _subscribersTopics.Keys) {
+                print += "\t\t" + topic + "with " + _subscribersTopics[topic].ToString() + "subscribers\n";
+            }
+            Console.Write(print);
+        }
+
         public void newPublication(Publication pub) {
-            //TODO: something
+            throw new NotImplementedException();
         }
 
         public void sendPublication(Publication pub) {
-            //TODO: something
+            throw new NotImplementedException();
         }
-        */
     }
 }
