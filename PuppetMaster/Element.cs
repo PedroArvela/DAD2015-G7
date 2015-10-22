@@ -45,6 +45,15 @@ namespace Element
             return answer;
         }
 
+        public List<string> getBrokerUrls() {
+            List<string> answer = new List<string>();
+
+            foreach (Broker.Broker b in _brokers) {
+                answer.Add(b.getProcessURL());
+            }
+            return answer;
+        }
+
         public void addChild(element c) { _childs.Add(c); }
         public void addBroker(Broker.Broker b) { _brokers.Add(b); }
         public void addSubscriber(Subscriber.Subscriber s) { _subscribers.Add(s); }

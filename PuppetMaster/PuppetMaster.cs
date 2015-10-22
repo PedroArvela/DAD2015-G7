@@ -241,7 +241,7 @@ namespace PuppetMaster
                     case "broker":
                         b = new Broker.Broker(processName, Url, Site, "flooding");
                         if (targetSite.getParent() != null) {
-                            foreach(string url in targetSite.getParentUrls()) {
+                            foreach(string url in targetSite.getParent().getBrokerUrls()) {
                                 b.addParentUrl(url);
                             }
                             foreach (Broker.Broker parentBroker in targetSite.getParent().getBrokers()) {
