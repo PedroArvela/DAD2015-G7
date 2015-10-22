@@ -8,13 +8,23 @@ namespace Publisher{
             //TODO: something
         }
 
-        private String name;
-        private String processURL;
-        private String siteURL;
-        private String site;
+        private String _name;
+        private String _processURL;
+        private String _site;
+        private List<string> _siteBrokerUrl;
 
-        public Publisher() {
-            //TODO: something
+        private string _puppetMasterURL;
+
+        public Publisher(string processName, string processURL, string site, string puppetMasterURL) {
+            _name = processName;
+            _processURL = processURL;
+            _site = site;
+            _puppetMasterURL = puppetMasterURL;
+            _siteBrokerUrl = new List<string>();
+        }
+
+        public void addBrokerURL(string url) {
+            _siteBrokerUrl.Add(url);
         }
 
         public void Publish(Publication pub) {

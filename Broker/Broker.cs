@@ -18,10 +18,13 @@ namespace Broker {
         private bool _delayed = false;
         private int _delayTime = 0;
 
-        public Broker(string processName, string processURL, string site, string routingtype) {
+        private string _puppetMasterURL;
+
+        public Broker(string processName, string processURL, string site, string routingtype, string puppetMasterURL) {
             _processName = processName;
             _processURL = processURL;
             _site = site;
+            _puppetMasterURL = puppetMasterURL;
             switch (routingtype) {
                 case "flooding":
                     _routingPolicy = false;

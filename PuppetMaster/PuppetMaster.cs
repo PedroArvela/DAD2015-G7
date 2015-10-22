@@ -22,6 +22,7 @@ namespace PuppetMaster
         private String logFile = ".\\Logfile.txt";
         private String routingLevel = "Flooding";
         private String orderLevel = "NO";
+        private String _masterURL = "";
 
         static void Main(string[] args) {
             //TODO: something
@@ -103,6 +104,8 @@ namespace PuppetMaster
             String unfreezePatern = "^Unfreeze\\s[A-Za-z0-9]+$";
             String waitPatern = "^Wait\\s[0-9]+$";
             String loggingPatern = "^LogginLevel\\s(full|light)$";
+            String validateWindowsPath = "(?:[\\w]\\:|\\\\|\\.)(\\\\[A-Za-z_\\-\\s0-9\\.]+)+\\.(txt|log)";
+            String importFile = "^Import\\s" + validateWindowsPath + "$";
             String showPatern = "^Show$";
             String quitPatern = "^Quit|Exit$";
 
@@ -124,6 +127,7 @@ namespace PuppetMaster
             regs.Add(new Regex(waitPatern, RegexOptions.None));
             regs.Add(new Regex(loggingPatern, RegexOptions.None));
             regs.Add(new Regex(showPatern, RegexOptions.None));
+            regs.Add(new Regex(importFile, RegexOptions.None));
             regs.Add(new Regex(quitPatern, RegexOptions.None));
 
             foreach (Regex r in regs) {
@@ -231,6 +235,8 @@ namespace PuppetMaster
         public void createProcess(String processName, String type, String Site, String Url) {
             element targetSite = this.findElement(networkTree, Site);
             Broker.Broker b;
+            Publisher.Publisher p;
+            Subscriber.Subscriber s;
 
             Console.WriteLine("Create Process Request");
 
@@ -239,7 +245,7 @@ namespace PuppetMaster
             } else {
                 switch (type) {
                     case "broker":
-                        b = new Broker.Broker(processName, Url, Site, "flooding");
+                        b = new Broker.Broker(processName, Url, Site, "flooding", this._masterURL);
                         if (targetSite.getParent() != null) {
                             foreach(string url in targetSite.getParent().getBrokerUrls()) {
                                 b.addParentUrl(url);
@@ -251,6 +257,10 @@ namespace PuppetMaster
                         targetSite.addBroker(b);
                         break;
                     case "publisher":
+                        p = new Publisher.Publisher(processName, Url, Site, this._masterURL);
+                        foreach (Broker.Broker sb in targetSite.getBrokers()) {
+                            p.addBrokerURL(sb.getProcessURL());
+                        }
                         break;
                     case "subscriber":
                         break;
