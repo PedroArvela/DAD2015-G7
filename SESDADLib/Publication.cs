@@ -6,24 +6,32 @@ using System.Threading.Tasks;
 
 namespace SESDADLib {
     public class Publication {
-        public string site {
+        public string _site {
             get;
         }
-        public string topic {
+        public string _topic {
             get;
         }
-        public string subject {
+        public string _subject {
             get;
         }
-        public string content {
+        public string _content {
+            get;
+        }
+        public DateTime _timestamp {
             get;
         }
 
-        public Publication(string site, string topic, string subject, string content) {
-            this.site = site;
-            this.topic = topic;
-            this.subject = subject;
-            this.content = content;
+        public Publication(string site, string topic, string subject, string content, DateTime date) {
+            _site = site;
+            _topic = topic;
+            _subject = subject;
+            _content = content;
+            _timestamp = date;
+        }
+
+        public override string ToString() {
+            return "Publication";
         }
     }
 }

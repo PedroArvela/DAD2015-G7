@@ -238,6 +238,8 @@ namespace PuppetMaster
             Publisher.Publisher p;
             Subscriber.Subscriber s;
 
+            string brokerUrl = "";
+
             Console.WriteLine("Create Process Request");
 
             if (targetSite == null) {
@@ -257,7 +259,9 @@ namespace PuppetMaster
                         targetSite.addBroker(b);
                         break;
                     case "publisher":
-                        p = new Publisher.Publisher(processName, Url, Site, this._masterURL);
+                        //FIX-ME: THIS WILL BLOW UP IN OUR FACES
+                        brokerUrl = targetSite.getBrokerUrls().ElementAt(0);
+                        p = new Publisher.Publisher(processName, Url, Site, brokerUrl, this._masterURL);
                         foreach (Broker.Broker sb in targetSite.getBrokers()) {
                             p.addBrokerURL(sb.getProcessURL());
                         }
