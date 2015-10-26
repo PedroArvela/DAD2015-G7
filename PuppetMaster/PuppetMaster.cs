@@ -29,7 +29,7 @@ namespace PuppetMaster
             PuppetMaster master = new PuppetMaster();
             bool open = true;
 
-            Console.WriteLine("Welcome!");
+            Console.WriteLine("Welcome!\n" + Directory.GetCurrentDirectory());
             while (open) {
                 Console.Write("#: ");
                 String input = Console.ReadLine();
@@ -87,7 +87,6 @@ namespace PuppetMaster
             } else if ((parent = this.findElement(networkTree, parentSite)) != null){
                 parent.addChild(new element(site, parent));
             }
-            this.showSiteTree(networkTree);
         }
 
         public bool processCommand(String command) {
@@ -104,7 +103,7 @@ namespace PuppetMaster
             String unfreezePatern = "^Unfreeze\\s[A-Za-z0-9]+$";
             String waitPatern = "^Wait\\s[0-9]+$";
             String loggingPatern = "^LogginLevel\\s(full|light)$";
-            String validateWindowsPath = "(?:[\\w]\\:|\\\\|\\.)(\\\\[A-Za-z_\\-\\s0-9\\.]+)+\\.(txt|log)";
+            String validateWindowsPath = "(?:[\\w]\\:|\\\\|\\.|\\.\\.)(\\\\[A-Za-z_\\-\\s0-9\\.]+)+\\.(txt|log)";
             String importFile = "^Import\\s" + validateWindowsPath + "$";
             String showPatern = "^Show$";
             String quitPatern = "^Quit|Exit$";
@@ -188,7 +187,7 @@ namespace PuppetMaster
                         this.LogLevel(parsed[1]);
                         break;
                     case "Show":
-                        this.showSiteTree(networkTree);
+                        this.printSiteTree(networkTree);
                         break;
                     case "Exit":
                         return false;
@@ -213,33 +212,11 @@ namespace PuppetMaster
             }
             configStream.Close();
         }
-        public void showSiteTree(element tree) {
-            Console.WriteLine("SHOWING SITE: " + tree.getSite());
-            if (tree != null) {
-                if (tree.getParent() == null) {
-                    Console.WriteLine("\tParent: none");
-                } else {
-                    Console.WriteLine("\tParent: " + tree.getParent().getSite());
-                }
-                Console.WriteLine("\tRegistered Brokers: " + tree.getBrokers().Count);
-                Console.WriteLine("\tRegistered Subscribers: " + tree.getSubscribers().Count);
-                Console.WriteLine("\tRegistered Publishers: " + tree.getPublishers().Count);
-                Console.WriteLine("---Brokers---");
-                foreach (Broker.Broker b in tree.getBrokers()) {
-                    b.printNode();
-                }
-                Console.WriteLine("---Publishers---");
-                foreach (Publisher.Publisher p in tree.getPublishers()) {
-                    p.printNode();
-                }
-                Console.WriteLine("---Subscribers---");
-                foreach (Subscriber.Subscriber s in tree.getSubscribers()) {
-                    s.printNode();
-                }
-                foreach (element c in tree.getChilds()) {
-                    this.showSiteTree(c);
-                }
-            }
+        public void printSiteTree(element tree) {
+            tree.printElement();
+        }
+        public string showSiteTree(element tree) {
+            return tree.showElement();
         }
         public void wipeNetwork() {
             //TODO: something

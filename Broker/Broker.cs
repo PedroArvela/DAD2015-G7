@@ -45,7 +45,7 @@ namespace Broker {
             return (_delayed = !_delayed);
         }
 
-        public override void printNode() {
+        public override string showNode() {
             string print = "\tBroker: " + _processName + "for " + _site + " active on " + _processURL + "\n";
             print += "\tParent Broker URL(s):\n";
             foreach (string purl in _parentProcessesURL) {
@@ -59,7 +59,7 @@ namespace Broker {
             foreach (string topic in _subscribersTopics.Keys) {
                 print += "\t\t" + topic + "with " + _subscribersTopics[topic].ToString() + "subscribers\n";
             }
-            Console.Write(print);
+            return print;
         }
 
         public void newPublication(Publication pub) {
@@ -68,6 +68,10 @@ namespace Broker {
 
         public void sendPublication(Publication pub) {
             throw new NotImplementedException();
+        }
+
+        public override void printNode() {
+            Console.WriteLine(this.showNode());
         }
     }
 }

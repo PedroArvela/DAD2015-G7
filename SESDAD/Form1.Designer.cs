@@ -44,12 +44,12 @@
             this.LogOptionsFile = new System.Windows.Forms.ToolStripMenuItem();
             this.FullLogButton = new System.Windows.Forms.ToolStripMenuItem();
             this.LightLogButton = new System.Windows.Forms.ToolStripMenuItem();
-            this.StatusBox = new System.Windows.Forms.TextBox();
-            this.StatusUpdateButton = new System.Windows.Forms.Button();
             this.OrderingPolicyButton = new System.Windows.Forms.ToolStripMenuItem();
             this.FloodPolicyButton = new System.Windows.Forms.ToolStripMenuItem();
             this.FifoPolicyButton = new System.Windows.Forms.ToolStripMenuItem();
             this.TotalOrderPolicyButton = new System.Windows.Forms.ToolStripMenuItem();
+            this.StatusBox = new System.Windows.Forms.TextBox();
+            this.StatusUpdateButton = new System.Windows.Forms.Button();
             this.toolStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -62,7 +62,7 @@
             this.SpecialActionButton});
             this.toolStrip1.Location = new System.Drawing.Point(0, 0);
             this.toolStrip1.Name = "toolStrip1";
-            this.toolStrip1.Size = new System.Drawing.Size(784, 25);
+            this.toolStrip1.Size = new System.Drawing.Size(1034, 25);
             this.toolStrip1.TabIndex = 0;
             this.toolStrip1.Text = "toolStrip1";
             // 
@@ -181,6 +181,35 @@
             this.LightLogButton.Size = new System.Drawing.Size(101, 22);
             this.LightLogButton.Text = "Light";
             // 
+            // OrderingPolicyButton
+            // 
+            this.OrderingPolicyButton.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.FloodPolicyButton,
+            this.FifoPolicyButton,
+            this.TotalOrderPolicyButton});
+            this.OrderingPolicyButton.Name = "OrderingPolicyButton";
+            this.OrderingPolicyButton.Size = new System.Drawing.Size(161, 22);
+            this.OrderingPolicyButton.Text = "Ordering Policy";
+            this.OrderingPolicyButton.Click += new System.EventHandler(this.toolStripMenuItem1_Click);
+            // 
+            // FloodPolicyButton
+            // 
+            this.FloodPolicyButton.Name = "FloodPolicyButton";
+            this.FloodPolicyButton.Size = new System.Drawing.Size(134, 22);
+            this.FloodPolicyButton.Text = "Flood";
+            // 
+            // FifoPolicyButton
+            // 
+            this.FifoPolicyButton.Name = "FifoPolicyButton";
+            this.FifoPolicyButton.Size = new System.Drawing.Size(134, 22);
+            this.FifoPolicyButton.Text = "FIFO";
+            // 
+            // TotalOrderPolicyButton
+            // 
+            this.TotalOrderPolicyButton.Name = "TotalOrderPolicyButton";
+            this.TotalOrderPolicyButton.Size = new System.Drawing.Size(134, 22);
+            this.TotalOrderPolicyButton.Text = "Total Order";
+            // 
             // StatusBox
             // 
             this.StatusBox.Location = new System.Drawing.Point(12, 28);
@@ -198,40 +227,11 @@
             this.StatusUpdateButton.Text = "Status";
             this.StatusUpdateButton.UseVisualStyleBackColor = true;
             // 
-            // OrderingPolicyButton
-            // 
-            this.OrderingPolicyButton.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.FloodPolicyButton,
-            this.FifoPolicyButton,
-            this.TotalOrderPolicyButton});
-            this.OrderingPolicyButton.Name = "OrderingPolicyButton";
-            this.OrderingPolicyButton.Size = new System.Drawing.Size(161, 22);
-            this.OrderingPolicyButton.Text = "Ordering Policy";
-            this.OrderingPolicyButton.Click += new System.EventHandler(this.toolStripMenuItem1_Click);
-            // 
-            // FloodPolicyButton
-            // 
-            this.FloodPolicyButton.Name = "FloodPolicyButton";
-            this.FloodPolicyButton.Size = new System.Drawing.Size(152, 22);
-            this.FloodPolicyButton.Text = "Flood";
-            // 
-            // FifoPolicyButton
-            // 
-            this.FifoPolicyButton.Name = "FifoPolicyButton";
-            this.FifoPolicyButton.Size = new System.Drawing.Size(152, 22);
-            this.FifoPolicyButton.Text = "FIFO";
-            // 
-            // TotalOrderPolicyButton
-            // 
-            this.TotalOrderPolicyButton.Name = "TotalOrderPolicyButton";
-            this.TotalOrderPolicyButton.Size = new System.Drawing.Size(152, 22);
-            this.TotalOrderPolicyButton.Text = "Total Order";
-            // 
             // PuppetMasterForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(784, 561);
+            this.ClientSize = new System.Drawing.Size(1034, 961);
             this.Controls.Add(this.StatusUpdateButton);
             this.Controls.Add(this.StatusBox);
             this.Controls.Add(this.toolStrip1);

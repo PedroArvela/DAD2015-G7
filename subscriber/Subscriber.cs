@@ -43,6 +43,10 @@ namespace Subscriber {
         }
 
         public override void printNode() {
+            Console.WriteLine(this.showNode());
+        }
+
+        public override string showNode() {
             String print = "Subscriber: " + _processName + "for " + _site + " active on " + _processURL + "\n";
             print += "\tConnected on broker:\n";
             foreach (string broker in _siteBrokerUrl) {
@@ -55,13 +59,13 @@ namespace Subscriber {
                 print += "\t\t" + topic + "\n";
             }
             print += "\tSubscription History\n";
-            foreach(KeyValuePair<string, List<Publication>> entry in _subscriptionHistory) {
+            foreach (KeyValuePair<string, List<Publication>> entry in _subscriptionHistory) {
                 print += "\t\t" + entry.Key + "\n";
                 foreach (Publication pub in entry.Value) {
                     print += "\t\t\t" + pub.ToString();
                 }
             }
-            Console.WriteLine(print);
+            return print;
         }
     }
 }

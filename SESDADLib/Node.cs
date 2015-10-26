@@ -25,6 +25,8 @@ namespace SESDADLib {
 
         public void toogleEnable(bool enb){ _enabled = enb; }
 
+        public abstract string showNode();
+
         public abstract void printNode();
     }
 }

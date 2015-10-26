@@ -58,5 +58,39 @@ namespace Element
         public void addBroker(Broker.Broker b) { _brokers.Add(b); }
         public void addSubscriber(Subscriber.Subscriber s) { _subscribers.Add(s); }
         public void addPublisher(Publisher.Publisher p) { _publishers.Add(p); }
+
+        public void printElement() {
+            Console.WriteLine(this.showElement());
+        }
+
+        public string showElement() {
+            string print = "----" + _site + "----\n";
+                        
+            if (_parent == null) {
+                print += "\tParent: none";
+            } else {
+                print += "\tParent: " + _parent.getSite();
+            }
+            print += "\tRegistered Brokers: " + _brokers.Count;
+            print += "\tRegistered Subscribers: " + _subscribers.Count;
+            print += "\tRegistered Publishers: " + _publishers.Count;
+            print += "---Brokers---";
+            foreach (Broker.Broker b in _brokers) {
+                print += b.showNode();
+            }
+            print += "---Publishers---";
+            foreach (Publisher.Publisher p in _publishers){
+                print += p.showNode();
+            }
+            print += "---Subscribers---";
+            foreach (Subscriber.Subscriber s in _subscribers) {
+                print += s.showNode();
+            }
+            foreach (element c in _childs) {
+                print += c.showElement();
+            }
+
+            return print;
+        }
     }
 }

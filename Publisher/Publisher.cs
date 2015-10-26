@@ -35,9 +35,13 @@ namespace Publisher{
         }
 
         public override void printNode() {
+            Console.WriteLine(this.showNode());
+        }
+
+        public override string showNode() {
             string print = "Publisher: " + _processName + "for " + _site + " active on " + _processURL + "\n";
             print += "\tConnected on broker:\n";
-            foreach(string broker in _siteBrokerUrl) {
+            foreach (string broker in _siteBrokerUrl) {
                 print += "\t\t" + broker + "\n";
             }
             print += "\tPublication Topics:\n";
@@ -45,10 +49,10 @@ namespace Publisher{
                 print += "\t\t" + topic + "\n";
             }
             print += "\tPublication History\n";
-            foreach(Publication pub in _pubHistory) {
-                print += "\t\t" + pub.ToString() +"\n";
+            foreach (Publication pub in _pubHistory) {
+                print += "\t\t" + pub.ToString() + "\n";
             }
-            Console.WriteLine(print);
+            return print;
         }
     }
 
