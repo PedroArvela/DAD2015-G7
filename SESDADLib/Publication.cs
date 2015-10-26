@@ -6,21 +6,11 @@ using System.Threading.Tasks;
 
 namespace SESDADLib {
     public class Publication {
-        public string _site {
-            get;
-        }
-        public string _topic {
-            get;
-        }
-        public string _subject {
-            get;
-        }
-        public string _content {
-            get;
-        }
-        public DateTime _timestamp {
-            get;
-        }
+        public string _site;
+        public string _topic;
+        public string _subject;
+        public string _content;
+        public DateTime _timestamp;
 
         public Publication(string site, string topic, string subject, string content, DateTime date) {
             _site = site;
