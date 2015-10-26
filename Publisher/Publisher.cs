@@ -12,12 +12,11 @@ namespace Publisher{
         private List<string> _topics;
         private List<Publication> _pubHistory;
 
-        public Publisher(string processName, string processURL, string site, string brokerURL, string puppetMasterURL) : base(processName, processURL, site, puppetMasterURL) {
+        public Publisher(string processName, string processURL, string site, string puppetMasterURL) : base(processName, processURL, site, puppetMasterURL) {
             _siteBrokerUrl = new List<string>();
             _topics = new List<string>();
             _pubHistory = new List<Publication>();
-
-            _siteBrokerUrl.Add(brokerURL);
+            
             _puppetMasterURL = puppetMasterURL;
         }
 

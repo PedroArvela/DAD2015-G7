@@ -38,6 +38,10 @@ namespace Subscriber {
             //TODO: something
         }
 
+        public void addBrokerURL(string url) {
+            _siteBrokerUrl.Add(url);
+        }
+
         public override void printNode() {
             String print = "Subscriber: " + _processName + "for " + _site + " active on " + _processURL + "\n";
             print += "\tConnected on broker:\n";

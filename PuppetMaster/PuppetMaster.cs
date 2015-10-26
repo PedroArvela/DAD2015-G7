@@ -221,9 +221,18 @@ namespace PuppetMaster
                 Console.WriteLine("\tRegistered Brokers: " + tree.getBrokers().Count);
                 Console.WriteLine("\tRegistered Subscribers: " + tree.getSubscribers().Count);
                 Console.WriteLine("\tRegistered Publishers: " + tree.getPublishers().Count);
+                Console.WriteLine("---Brokers---");
                 foreach (Broker.Broker b in tree.getBrokers()) {
                     b.printNode();
-                }                
+                }
+                Console.WriteLine("---Publishers---");
+                foreach (Publisher.Publisher p in tree.getPublishers()) {
+                    p.printNode();
+                }
+                Console.WriteLine("---Subscribers---");
+                foreach (Subscriber.Subscriber s in tree.getSubscribers()) {
+                    s.printNode();
+                }
                 foreach (element c in tree.getChilds()) {
                     this.showSiteTree(c);
                 }
@@ -259,14 +268,19 @@ namespace PuppetMaster
                         targetSite.addBroker(b);
                         break;
                     case "publisher":
-                        //FIX-ME: THIS WILL BLOW UP IN OUR FACES
-                        brokerUrl = targetSite.getBrokerUrls().ElementAt(0);
-                        p = new Publisher.Publisher(processName, Url, Site, brokerUrl, this._masterURL);
+                        p = new Publisher.Publisher(processName, Url, Site, this._masterURL);
                         foreach (Broker.Broker sb in targetSite.getBrokers()) {
                             p.addBrokerURL(sb.getProcessURL());
                         }
+                        targetSite.addPublisher(p);
                         break;
                     case "subscriber":
+                        brokerUrl = targetSite.getBrokerUrls().ElementAt(0);
+                        s = new Subscriber.Subscriber(processName, Url, Site, this._masterURL);
+                        foreach (Broker.Broker pb in targetSite.getBrokers()) {
+                            s.addBrokerURL(pb.getProcessURL());
+                        }
+                        targetSite.addSubscriber(s);
                         break;
                 }
             }
