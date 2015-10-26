@@ -169,6 +169,9 @@ namespace PuppetMaster
                     case "Status":
                         this.Status();
                         break;
+                    case "Import":
+                        this.importConfig(parsed[1]);
+                        break;
                     case "Crash":
                         this.crash(parsed[1]);
                         break;

@@ -1,0 +1,12 @@
+Site google Parent none
+Site yhaoo Parent google
+Site blinx Parent google
+Site microsoft Parent blinx
+Site apple Parent blinx
+Process gBroker Is broker On google URL tcp://127.0.0.1:1234/gBroker
+Process yBroker Is broker On yhaoo URL tcp://127.0.0.1:1235/yBroker
+Process bBroker Is broker On blinx URL tcp://127.0.0.1:1236/bBroker
+Process mBroker Is broker On microsoft URL tcp://127.0.0.1:1237/mBroker
+Process aBroker Is broker On apple URL tcp://127.0.0.1:1238/aBroker
+Process yPub Is publisher On yhaoo URL tcp://127.0.0.1:1239/yPub
+Process mSub Is subscriber On microsoft URL tcp://127.0.0.1:1240/mSub
