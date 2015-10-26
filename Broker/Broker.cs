@@ -45,7 +45,7 @@ namespace Broker {
             return (_delayed = !_delayed);
         }
 
-        public void printBroker() {
+        public override void printNode() {
             string print = "\tBroker: " + _processName + "for " + _site + " active on " + _processURL + "\n";
             print += "\tParent Broker URL(s):\n";
             foreach (string purl in _parentProcessesURL) {

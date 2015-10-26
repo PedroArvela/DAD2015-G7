@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace SESDADLib {
-    public class Node : MarshalByRefObject {
+    public abstract class Node : MarshalByRefObject {
         protected string _processName;
         protected string _processURL;
         protected string _site;
@@ -24,5 +24,7 @@ namespace SESDADLib {
         public bool getEnabled() { return _enabled; }
 
         public void toogleEnable(bool enb){ _enabled = enb; }
+
+        public abstract void printNode();
     }
 }

@@ -22,6 +22,10 @@ namespace Publisher{
         public void Publish(Publication pub) {
             //TODO: something
         }
+
+        public override void printNode() {
+            Console.WriteLine("THIS IS PUBLISHER");
+        }
     }
 
     internal interface IPublisher {

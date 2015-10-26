@@ -21,5 +21,9 @@ namespace Subscriber {
         public void newPublication(Publication pub) {
             //TODO: something
         }
+
+        public override void printNode() {
+            Console.WriteLine("THIS IS SUBSCRIBER");
+        }
     }
 }

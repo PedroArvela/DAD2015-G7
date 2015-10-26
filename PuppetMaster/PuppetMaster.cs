@@ -92,7 +92,7 @@ namespace PuppetMaster
 
         public bool processCommand(String command) {
             String sitePatern = "^Site\\s[A-Za-z0-9]+\\sParent\\s[A-Za-z0-9]+$";
-            String processPatern = "^Process\\s[A-Za-z0-9]+\\sIs\\s(broker|publisher|subscriber)\\sOn\\s[A-Za-z0-9]+\\sURL\\stcp://([0-9]+\\.){3}[0-9]:[0-9]{4}/[A-Za-z]+$";
+            String processPatern = "^Process\\s[A-Za-z0-9]+\\sIs\\s(broker|publisher|subscriber)\\sOn\\s[A-Za-z0-9]+\\sURL\\stcp://([0-9]+\\.){3}[0-9]:[0-9]{3,}/[A-Za-z]+$";
             String routingPatern = "^RoutingPolicy(flooding|filter)$";
             String orderingPatern = "^Ordering\\s(NO|FIFO|TOTAL)$";
             String subPatern = "^Subscriber\\s[A-Za-z0-9]+\\sSubscribe\\s[A-Za-z0-9]+$";
@@ -222,7 +222,7 @@ namespace PuppetMaster
                 Console.WriteLine("\tRegistered Subscribers: " + tree.getSubscribers().Count);
                 Console.WriteLine("\tRegistered Publishers: " + tree.getPublishers().Count);
                 foreach (Broker.Broker b in tree.getBrokers()) {
-                    b.printBroker();
+                    b.printNode();
                 }                
                 foreach (element c in tree.getChilds()) {
                     this.showSiteTree(c);
