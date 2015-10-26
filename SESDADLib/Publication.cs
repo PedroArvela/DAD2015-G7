@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace SESDADLib {
+    [Serializable]
     public class Publication {
         public string _site;
         public string _topic;
