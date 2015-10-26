@@ -1,23 +1,30 @@
 ﻿using SESDADLib;
 using System;
 using System.Collections.Generic;
+using System.Runtime.Remoting.Channels;
+using System.Runtime.Remoting.Channels.Tcp;
+
 
 namespace Publisher{
     public class Publisher : Node{
         static void Main(string[] args) {
-            //TODO: something
+            Publisher pub = new Publisher("process1", "23232", "tcp://127.0.0.1:1337/subscriber", "232");
+            pub.Publish(new Publication("191.2.3.4", "DAD", "Projecto", "Projecto de DAD", new DateTime()));
+            System.Console.Read();
         }
         
         private List<string> _siteBrokerUrl;
         private List<string> _topics;
         private List<Publication> _pubHistory;
+        private string _fatherNodeURL;
 
-        public Publisher(string processName, string processURL, string site, string puppetMasterURL) : base(processName, processURL, site, puppetMasterURL) {
-            _siteBrokerUrl = new List<string>();
+        public Publisher(string processName, string processURL, string fatherNodeURL, string puppetMasterURL) : base(processName, processURL, fatherNodeURL, puppetMasterURL) {
+            _siteBrokerUrl = new List<string>(); // Quando tiver mais que um broker
             _topics = new List<string>();
             _pubHistory = new List<Publication>();
             
             _puppetMasterURL = puppetMasterURL;
+            _fatherNodeURL = fatherNodeURL; // Apenas 1 broker
         }
 
         public void addBrokerURL(string url) {
@@ -30,8 +37,14 @@ namespace Publisher{
 
         public void Publish(Publication pub) {
             _pubHistory.Add(pub);
-            
-            //TODO: something
+
+            TcpChannel channel = new TcpChannel();
+            ChannelServices.RegisterChannel(channel, false);
+            ISubscriber sub = (ISubscriber)Activator.GetObject(typeof(ISubscriber), _fatherNodeURL);
+            if(sub == null)
+                System.Console.WriteLine("Could not locate father node");
+            else
+                sub.newPublication(pub);
         }
 
         public override void printNode() {
@@ -54,8 +67,5 @@ namespace Publisher{
             }
             return print;
         }
-    }
-
-    internal interface IPublisher {
     }
 }

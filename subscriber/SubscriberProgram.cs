@@ -15,7 +15,7 @@ namespace Subscriber {
 
             TcpChannel channel = new TcpChannel(1337);
             ChannelServices.RegisterChannel(channel, false);
-            RemotingServices.Marshal(sub, "ChatClient", typeof(ISubscriber));
+            RemotingServices.Marshal(sub, "subscriber", typeof(ISubscriber));
             Console.ReadLine();
         }
     }
