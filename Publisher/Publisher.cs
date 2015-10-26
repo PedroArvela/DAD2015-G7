@@ -3,22 +3,14 @@ using System;
 using System.Collections.Generic;
 
 namespace Publisher{
-    public class Publisher{
+    public class Publisher : Node{
         static void Main(string[] args) {
             //TODO: something
         }
-
-        private String _name;
-        private String _processURL;
-        private String _site;
+        
         private List<string> _siteBrokerUrl;
 
-        private string _puppetMasterURL;
-
-        public Publisher(string processName, string processURL, string site, string puppetMasterURL) {
-            _name = processName;
-            _processURL = processURL;
-            _site = site;
+        public Publisher(string processName, string processURL, string site, string puppetMasterURL) : base(processName, processURL, site, puppetMasterURL) {
             _puppetMasterURL = puppetMasterURL;
             _siteBrokerUrl = new List<string>();
         }

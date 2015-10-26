@@ -86,6 +86,10 @@
       <Project>{130097c1-253d-4082-a1d3-5c9903849524}</Project>
       <Name>Publisher</Name>
     </ProjectReference>
+    <ProjectReference Include="..\SESDADLib\SESDADLib.csproj">
+      <Project>{c235be3f-016a-426e-98f4-cb8ef6f87886}</Project>
+      <Name>SESDADLib</Name>
+    </ProjectReference>
     <ProjectReference Include="..\subscriber\Subscriber.csproj">
       <Project>{3a80a74a-0d0c-449b-9e87-34ad3665373f}</Project>
       <Name>Subscriber</Name>

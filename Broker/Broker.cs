@@ -4,26 +4,17 @@ using System.Collections.Generic;
 using SESDADLib;
 
 namespace Broker {
-    public class Broker : MarshalByRefObject, IBroker {
+    public class Broker : Node, IBroker {
         private bool _routingPolicy;
 
-        private string _processName;
-        private string _processURL;
-        private string _site;
         private Dictionary<string, int> _subscribersTopics = new Dictionary<string, int>(); //key == topic, value == #subscribers
         private ArrayList _parentProcessesURL = new ArrayList();
         private ArrayList _childProcessesURL = new ArrayList();
         
-        private bool _enabled = true;
         private bool _delayed = false;
         private int _delayTime = 0;
 
-        private string _puppetMasterURL;
-
-        public Broker(string processName, string processURL, string site, string routingtype, string puppetMasterURL) {
-            _processName = processName;
-            _processURL = processURL;
-            _site = site;
+        public Broker(string processName, string processURL, string site, string routingtype, string puppetMasterURL) : base(processName, processURL, site, puppetMasterURL) {
             _puppetMasterURL = puppetMasterURL;
             switch (routingtype) {
                 case "flooding":
@@ -34,9 +25,7 @@ namespace Broker {
                     break;
             }
         }
-
-        public string getSite() { return _site; }
-        public string getProcessURL() { return _processURL; }
+        
         public ArrayList getParentURL() { return _parentProcessesURL; }
         public ArrayList getChildURL() { return _childProcessesURL; }
 

@@ -3,13 +3,10 @@ using System;
 using System.Collections.Generic;
 
 namespace Subscriber {
-    public class Subscriber : MarshalByRefObject, ISubscriber {
-        private string name;
-        private string processURL;
+    public class Subscriber : Node, ISubscriber {
         private List<Publication> subscriptions;
 
-        public Subscriber() {
-            //TODO: something
+        public Subscriber(string processName, string processURL, string site, string puppetMasterURL) : base(processName, processURL, site, puppetMasterURL) {
         }
 
         public void subscribe(string topic) {
