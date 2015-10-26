@@ -35,7 +35,7 @@ namespace Subscriber {
 
         // Callback for brokers to use to send the data
         public void newPublication(Publication pub) {
-            //TODO: something
+            Console.WriteLine(pub._content);
         }
 
         public void addBrokerURL(string url) {
