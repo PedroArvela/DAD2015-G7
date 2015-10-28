@@ -23,10 +23,12 @@ namespace PuppetMaster
         private String routingLevel = "Flooding";
         private String orderLevel = "NO";
         private String _masterURL = "";
+        private StreamWriter logFilePipe;
 
         static void Main(string[] args) {
+
             //TODO: something
-            PuppetMaster master = new PuppetMaster();
+            PuppetMaster master = new PuppetMaster("tcp://1.2.3.4:1234/puppetMaster");
             bool open = true;
 
             Console.WriteLine("Welcome!\n" + Directory.GetCurrentDirectory());
@@ -37,11 +39,15 @@ namespace PuppetMaster
             } 
         }
 
-        public PuppetMaster() {
-
+        public PuppetMaster(string processURL) {
+            _masterURL = processURL;
+            logFilePipe = new StreamWriter(logFile);
         }
 
-        public PuppetMaster(String configFilePath) {
+        public PuppetMaster(string processURL, String configFilePath) {
+            _masterURL = processURL;
+            logFilePipe = new StreamWriter(logFile);
+
             StreamReader configStream = new StreamReader(configFilePath);
             String inString;
 
@@ -84,8 +90,10 @@ namespace PuppetMaster
             element parent;
             if (parentSite.Equals("none") && networkTree == null) {
                 networkTree = new element(site, null);
+                writeToLog(site + " is root Root site");
             } else if ((parent = this.findElement(networkTree, parentSite)) != null){
                 parent.addChild(new element(site, parent));
+                writeToLog(site + " created - parent site: " + parentSite);
             }
         }
 
@@ -105,10 +113,13 @@ namespace PuppetMaster
             String loggingPatern = "^LogginLevel\\s(full|light)$";
             String validateWindowsPath = "(?:[\\w]\\:|\\\\|\\.|\\.\\.)(\\\\[A-Za-z_\\-\\s0-9\\.]+)+\\.(txt|log)";
             String importFile = "^Import\\s" + validateWindowsPath + "$";
+            String importScript = "^RunScript\\s" + validateWindowsPath + "$";
+            String changeLogPath = "^LogFile\\s" + validateWindowsPath + "$";
+            String startNetwork = "^StartNetwork$";
             String showPatern = "^Show$";
             String quitPatern = "^Quit|Exit$";
 
-            ArrayList regs = new ArrayList();
+            List<Regex> regs = new List<Regex>();
             Match m;
             ArrayList parse = new ArrayList();
 
@@ -127,6 +138,9 @@ namespace PuppetMaster
             regs.Add(new Regex(loggingPatern, RegexOptions.None));
             regs.Add(new Regex(showPatern, RegexOptions.None));
             regs.Add(new Regex(importFile, RegexOptions.None));
+            regs.Add(new Regex(importScript, RegexOptions.None));
+            regs.Add(new Regex(changeLogPath, RegexOptions.None));
+            regs.Add(new Regex(startNetwork, RegexOptions.None));
             regs.Add(new Regex(quitPatern, RegexOptions.None));
 
             foreach (Regex r in regs) {
@@ -155,8 +169,7 @@ namespace PuppetMaster
                         orderLevel = parsed[1];
                         break;
                     case "Subscriber":
-                        if (parsed[2].Equals("Subscribe"))
-                        {
+                        if (parsed[2].Equals("Subscribe")) {
                             this.UnSubscribe(parsed[1], parsed[3]);
                         } else {
                             this.Subscribe(parsed[1], parsed[3]);
@@ -186,12 +199,20 @@ namespace PuppetMaster
                     case "LogginLevel":
                         this.LogLevel(parsed[1]);
                         break;
+                    case "RunScript":
+                        this.runScript(parsed[1]);
+                        break;
+                    case "LogFile":
+                        this.changeLogFile(parsed[1]);
+                        break;
                     case "Show":
                         this.printSiteTree(networkTree);
                         break;
                     case "Exit":
+                        logFilePipe.Close();
                         return false;
                     case "Quit":
+                        logFilePipe.Close();
                         return false;
                 }
             }
@@ -199,6 +220,16 @@ namespace PuppetMaster
                 Console.Write("Command: \"" + command + "\"" + " is not a recognized command...\n");
             }
             return true;
+        }
+
+        private void runScript(string scriptFilePath) {
+            StreamReader scriptStream = new StreamReader(scriptFilePath);
+            String inString;
+
+            while ((inString = scriptStream.ReadLine()) != null) {
+                this.processCommand(inString);
+            }
+            scriptStream.Close();
         }
 
         public void importConfig(String configFilePath) {
@@ -229,8 +260,6 @@ namespace PuppetMaster
 
             string brokerUrl = "";
 
-            Console.WriteLine("Create Process Request");
-
             if (targetSite == null) {
                 Console.WriteLine("No target site found...");
             } else {
@@ -246,6 +275,7 @@ namespace PuppetMaster
                             }
                         }
                         targetSite.addBroker(b);
+                        writeToLog("Broker " + processName + " created on " + Site + " with process URL " + Url);
                         break;
                     case "publisher":
                         p = new Publisher.Publisher(processName, Url, Site, this._masterURL);
@@ -253,6 +283,7 @@ namespace PuppetMaster
                             p.addBrokerURL(sb.getProcessURL());
                         }
                         targetSite.addPublisher(p);
+                        writeToLog("Publisher " + processName + " created on " + Site + " with process URL " + Url);
                         break;
                     case "subscriber":
                         brokerUrl = targetSite.getBrokerUrls().ElementAt(0);
@@ -261,9 +292,14 @@ namespace PuppetMaster
                             s.addBrokerURL(pb.getProcessURL());
                         }
                         targetSite.addSubscriber(s);
+                        writeToLog("Subscriber " + processName + " created on " + Site + " with process URL " + Url);
                         break;
                 }
             }
+        }
+
+        private void writeToLog(string msg) {
+            logFilePipe.WriteLine("[" + DateTime.Now.ToString("dd/MM/yyyy - HH:mm:ss")  + "] - " + msg);
         }
 
         public void Subscribe(String processName, String topicName) {
@@ -286,6 +322,8 @@ namespace PuppetMaster
         }
         public void changeLogFile(String logfilePath) {
             this.logFile = logfilePath;
+            logFilePipe.Close();
+            logFilePipe = new StreamWriter(this.logFile);
         }
         public void Status() {
             Console.WriteLine("Status request");
