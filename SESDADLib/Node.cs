@@ -21,7 +21,7 @@ namespace SESDADLib {
             _nodeProcess = new Process();
         }
 
-        public string getProcessName(){ return _processURL; }
+        public string getProcessName(){ return _processName; }
         public string getProcessURL() { return _processURL; }
         public string getSite() { return _site; }
         public bool getEnabled() { return _enabled; }
