@@ -25,6 +25,8 @@ namespace Publisher{
             
             _puppetMasterURL = puppetMasterURL;
             _fatherNodeURL = fatherNodeURL; // Apenas 1 broker
+
+            _nodeProcess.StartInfo.FileName = "..\\..\\..\\Publisher\\bin\\Debug\\Publisher.exe";
         }
 
         public void addBrokerURL(string url) {
@@ -66,6 +68,15 @@ namespace Publisher{
                 print += "\t\t" + pub.ToString() + "\n";
             }
             return print;
+        }
+
+        protected override string getArguments() {
+            throw new NotImplementedException();
+        }
+
+        public override void executeProcess() {
+            _nodeProcess.StartInfo.Arguments = this.getArguments();
+            _nodeProcess.Start();
         }
     }
 }

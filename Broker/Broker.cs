@@ -8,8 +8,8 @@ namespace Broker {
         private bool _routingPolicy;
 
         private Dictionary<string, int> _subscribersTopics = new Dictionary<string, int>(); //key == topic, value == #subscribers
-        private ArrayList _parentProcessesURL = new ArrayList();
-        private ArrayList _childProcessesURL = new ArrayList();
+        private List<string> _parentProcessesURL = new List<string>();
+        private List<string> _childProcessesURL = new List<string>();
         
         private bool _delayed = false;
         private int _delayTime = 0;
@@ -24,10 +24,13 @@ namespace Broker {
                     _routingPolicy = true;
                     break;
             }
+
+            //process start arguments
+            _nodeProcess.StartInfo.FileName = "..\\..\\..\\Broker\\bin\\Debug\\Broker.exe";
         }
         
-        public ArrayList getParentURL() { return _parentProcessesURL; }
-        public ArrayList getChildURL() { return _childProcessesURL; }
+        public List<string> getParentURL() { return _parentProcessesURL; }
+        public List<string> getChildURL() { return _childProcessesURL; }
 
         public void addChildUrl(string url) {
             _childProcessesURL.Add(url);
@@ -72,6 +75,25 @@ namespace Broker {
 
         public override void printNode() {
             Console.WriteLine(this.showNode());
+        }
+
+        protected override string getArguments() {
+            //processName processURL site routingtype puppetMasterURL -p parentURL -c childURL
+            string arguments = _processName + " " + _processURL + " " + _site + " " + _routingPolicy + " " + _puppetMasterURL + " ";
+
+            foreach (string parent in _parentProcessesURL) {
+                arguments += " -p " + parent;
+            }
+            foreach (string child in _childProcessesURL) {
+                arguments += " -p" + child;
+            }
+
+            return arguments;
+        }
+
+        public override void executeProcess() {
+            _nodeProcess.StartInfo.Arguments = this.getArguments();
+            _nodeProcess.Start();
         }
     }
 }

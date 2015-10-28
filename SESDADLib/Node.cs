@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,11 +12,13 @@ namespace SESDADLib {
         protected string _site;
         protected string _puppetMasterURL;
         protected bool _enabled = true;
+        protected Process _nodeProcess;
 
         public Node(string processName, string processURL, string site, string puppetMasterURL) {
             _processName = processName;
             _processURL = processURL;
             _site = site;
+            _nodeProcess = new Process();
         }
 
         public string getProcessName(){ return _processURL; }
@@ -28,5 +31,9 @@ namespace SESDADLib {
         public abstract string showNode();
 
         public abstract void printNode();
+
+        protected abstract string getArguments();
+
+        public abstract void executeProcess();
     }
 }

@@ -12,6 +12,8 @@ namespace Subscriber {
             _subscriptionTopics = new List<string>();
             _subscriptionHistory = new Dictionary<string, List<Publication>>();
             _siteBrokerUrl = new List<string>();
+
+            _nodeProcess.StartInfo.FileName = "..\\..\\..\\Subscriber\\bin\\Debug\\Subscriber.exe";
         }
 
         public void addTopic(string topic) { _subscriptionTopics.Add(topic); }
@@ -66,6 +68,15 @@ namespace Subscriber {
                 }
             }
             return print;
+        }
+
+        protected override string getArguments() {
+            throw new NotImplementedException();
+        }
+
+        public override void executeProcess() {
+            _nodeProcess.StartInfo.Arguments = this.getArguments();
+            _nodeProcess.Start();
         }
     }
 }

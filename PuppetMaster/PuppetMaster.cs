@@ -4,9 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 using Element;
-using Broker;
-using Publisher;
-using Subscriber;
+using SESDADLib;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,8 +12,9 @@ using System.Threading.Tasks;
 namespace PuppetMaster
 {
     public class PuppetMaster {
-        //Key = site
-        //value = mothersite
+        private List<Broker.Broker> _brokers;
+        private List<Publisher.Publisher> _publishers;
+        private List<Subscriber.Subscriber> _subscribers;
         private element networkTree = null; //holds tree for elements in network
 
         private bool loggingLevel = false;
@@ -41,11 +40,19 @@ namespace PuppetMaster
 
         public PuppetMaster(string processURL) {
             _masterURL = processURL;
+            _brokers = new List<Broker.Broker>();
+            _publishers = new List<Publisher.Publisher>();
+            _subscribers = new List<Subscriber.Subscriber>();
+
             logFilePipe = new StreamWriter(logFile);
         }
 
         public PuppetMaster(string processURL, String configFilePath) {
             _masterURL = processURL;
+            _brokers = new List<Broker.Broker>();
+            _publishers = new List<Publisher.Publisher>();
+            _subscribers = new List<Subscriber.Subscriber>();
+
             logFilePipe = new StreamWriter(logFile);
 
             StreamReader configStream = new StreamReader(configFilePath);
@@ -116,6 +123,7 @@ namespace PuppetMaster
             String importScript = "^RunScript\\s" + validateWindowsPath + "$";
             String changeLogPath = "^LogFile\\s" + validateWindowsPath + "$";
             String startNetwork = "^StartNetwork$";
+            String startProcess = "^Start\\s(broker|subscriber|publisher)\\s[A-Za-z0-9]+$";
             String showPatern = "^Show$";
             String quitPatern = "^Quit|Exit$";
 
@@ -141,6 +149,7 @@ namespace PuppetMaster
             regs.Add(new Regex(importScript, RegexOptions.None));
             regs.Add(new Regex(changeLogPath, RegexOptions.None));
             regs.Add(new Regex(startNetwork, RegexOptions.None));
+            regs.Add(new Regex(startProcess, RegexOptions.None));
             regs.Add(new Regex(quitPatern, RegexOptions.None));
 
             foreach (Regex r in regs) {
@@ -208,6 +217,12 @@ namespace PuppetMaster
                     case "Show":
                         this.printSiteTree(networkTree);
                         break;
+                    case "StartNetwork":
+                        this.startNetwork();
+                        break;
+                    case "Start":
+                        this.startProcess(parsed[1], parsed[2]);
+                        break;
                     case "Exit":
                         logFilePipe.Close();
                         return false;
@@ -274,6 +289,8 @@ namespace PuppetMaster
                                 parentBroker.addChildUrl(Url);
                             }
                         }
+                        Console.WriteLine(b.getProcessName());
+                        _brokers.Add(b);
                         targetSite.addBroker(b);
                         writeToLog("Broker " + processName + " created on " + Site + " with process URL " + Url);
                         break;
@@ -282,6 +299,7 @@ namespace PuppetMaster
                         foreach (Broker.Broker sb in targetSite.getBrokers()) {
                             p.addBrokerURL(sb.getProcessURL());
                         }
+                        _publishers.Add(p);
                         targetSite.addPublisher(p);
                         writeToLog("Publisher " + processName + " created on " + Site + " with process URL " + Url);
                         break;
@@ -291,6 +309,7 @@ namespace PuppetMaster
                         foreach (Broker.Broker pb in targetSite.getBrokers()) {
                             s.addBrokerURL(pb.getProcessURL());
                         }
+                        _subscribers.Add(s);
                         targetSite.addSubscriber(s);
                         writeToLog("Subscriber " + processName + " created on " + Site + " with process URL " + Url);
                         break;
@@ -300,6 +319,54 @@ namespace PuppetMaster
 
         private void writeToLog(string msg) {
             logFilePipe.WriteLine("[" + DateTime.Now.ToString("dd/MM/yyyy - HH:mm:ss")  + "] - " + msg);
+        }
+
+        private void startNetwork() {
+            throw new NotImplementedException();
+        }
+
+        private void startProcess(string type, string name) {
+            Node target = null;
+            bool found = false;
+
+            switch (type) {
+                case "broker":
+                    foreach (Broker.Broker b in _brokers) {
+                        if (b.getProcessName().Equals(name)) {
+                            target = b;
+                            found = true;
+                            break;
+                        }
+                    }
+                    break;
+                case "publisher":
+                    foreach (Publisher.Publisher p in _publishers) {
+                        if (p.getProcessName() == name) {
+                            target = p;
+                            found = true;
+                            break;
+                        }
+                    }
+                    break;
+                case "subscriber":
+                    foreach (Subscriber.Subscriber s in _subscribers) {
+                        if (s.getProcessName() == name) {
+                            target = s;
+                            found = true;
+                            break;
+                        }
+                    }
+                    break;
+            }
+
+            if (found) {
+                target.executeProcess();
+                writeToLog("Process " + name + " started");
+                Console.WriteLine("Process " + name + " started");
+            } else {
+                writeToLog("Process " + name + " cannot be started - Non-Existant");
+                Console.WriteLine("Process " + name + " cannot be started - Non-Existant");
+            }
         }
 
         public void Subscribe(String processName, String topicName) {
