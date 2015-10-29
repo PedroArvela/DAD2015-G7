@@ -71,7 +71,12 @@ namespace Subscriber {
         }
 
         protected override string getArguments() {
-            throw new NotImplementedException();
+            //processNAme processURL site puppetMAsterURL -b brokerURL
+            string text = _processName + " " + _processURL + " " + _site + " " + _puppetMasterURL;
+            foreach(string broker in _siteBrokerUrl) {
+                text += " -b " + broker;
+            }
+            return text;
         }
 
         public override void executeProcess() {
