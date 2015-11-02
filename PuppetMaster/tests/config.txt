@@ -10,3 +10,15 @@ Process mBroker Is broker On microsoft URL tcp://localhost:1237/mBroker
 Process aBroker Is broker On apple URL tcp://localhost:1238/aBroker
 Process yPub Is publisher On yhaoo URL tcp://localhost:1239/yPub
 Process mSub Is subscriber On microsoft URL tcp://localhost:1240/mSub
+---EOC---
+
+
+					google
+					  |
+				¯¯¯¯¯¯¯¯¯¯¯¯¯
+				|			|
+			  yhaoo       blinx
+			  				|
+			  			¯¯¯¯¯¯¯¯¯
+			  			|		|
+			  		  apple  micosoft

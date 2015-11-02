@@ -297,10 +297,12 @@ namespace PuppetMaster
                         this.startProcess(parsed[1], parsed[2]);
                         break;
                     case "Exit":
+                        wipeNetwork();
                         logFilePipe.Close();
                         return false;
                     case "Quit":
                         logFilePipe.Close();
+                        wipeNetwork();
                         return false;
                 }
             }
@@ -315,6 +317,10 @@ namespace PuppetMaster
             String inString;
 
             while ((inString = scriptStream.ReadLine()) != null) {
+                if (inString.Equals("---EOS---")) {
+                    scriptStream.Close();
+                    return;
+                }
                 this.processCommand(inString);
             }
             scriptStream.Close();
@@ -327,6 +333,10 @@ namespace PuppetMaster
 
             while ((inString = configStream.ReadLine()) != null)
             {
+                if (inString.Equals("---EOC---")) {
+                    configStream.Close();
+                    return;
+                }
                 this.processCommand(inString);
             }
             configStream.Close();
@@ -338,7 +348,25 @@ namespace PuppetMaster
             return tree.showElement();
         }
         public void wipeNetwork() {
-            //TODO: something
+            this.networkTree = null;
+            foreach (Broker.Broker n in _brokers) {
+                if (n.getExecuting()) {
+                    n.closeProcess();
+                }
+            }
+            _brokers.Clear();
+            foreach (Publisher.Publisher n in _publishers) {
+                if (n.getExecuting()) {
+                    n.closeProcess();
+                }
+            }
+            _publishers.Clear();
+            foreach (Subscriber.Subscriber n in _subscribers) {
+                if (n.getExecuting()) {
+                    n.closeProcess();
+                }
+            }
+            _subscribers.Clear();
         }
         public void createProcess(String processName, String type, String Site, String Url) {
             element targetSite = this.findElement(networkTree, Site);
@@ -497,11 +525,51 @@ namespace PuppetMaster
         }
         public void freeze(String processName) {
             Console.WriteLine("Freeze Request");
-           //TODO: something
+            foreach (Broker.Broker b in _brokers) {
+                if (b.getProcessName().Equals(processName) && b.getExecuting()) {
+                    this.connectToNode("broker", b.getProcessName());
+                    _remoteBroker.setEnable(false);
+                    return;
+                }
+            }
+            foreach (Subscriber.Subscriber s in _subscribers) {
+                if (s.getProcessName().Equals(processName) && s.getExecuting()) {
+                    this.connectToNode("subscriber", s.getProcessName());
+                    _remoteSub.setEnable(false);
+                    return;
+                }
+            }
+            foreach (Publisher.Publisher p in _publishers) {
+                if (p.getProcessName().Equals(processName) && p.getExecuting()) {
+                    this.connectToNode("publisher", p.getProcessName());
+                    _remotePub.setEnable(false);
+                    return;
+                }
+            }
         }
         public void unFreeze(String processName) {
             Console.WriteLine("UnFreeze Request");
-            //TODO: something
+            foreach (Broker.Broker b in _brokers) {
+                if (b.getProcessName().Equals(processName) && b.getExecuting()) {
+                    this.connectToNode("broker", b.getProcessName());
+                    _remoteBroker.setEnable(true);
+                    return;
+                }
+            }
+            foreach (Subscriber.Subscriber s in _subscribers) {
+                if (s.getProcessName().Equals(processName) && s.getExecuting()) {
+                    this.connectToNode("subscriber", s.getProcessName());
+                    _remoteSub.setEnable(true);
+                    return;
+                }
+            }
+            foreach (Publisher.Publisher p in _publishers) {
+                if (p.getProcessName().Equals(processName) && p.getExecuting()) {
+                    this.connectToNode("publisher", p.getProcessName());
+                    _remotePub.setEnable(true);
+                    return;
+                }
+            }
         }
         public void wait(int time) {
             Console.WriteLine("Wait Request");

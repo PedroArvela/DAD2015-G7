@@ -29,7 +29,7 @@ namespace SESDADLib {
         public bool getEnabled() { return _enabled; }
         public bool getExecuting() { return _executing; }
 
-        public void toogleEnable(bool enb){ _enabled = enb; }
+        public void setEnable(bool enb){ _enabled = enb; }
 
         public abstract string showNode();
 
