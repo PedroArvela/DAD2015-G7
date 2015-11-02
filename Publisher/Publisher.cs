@@ -39,9 +39,7 @@ namespace Publisher{
             _siteBrokerUrl = new List<string>();
             _topics = new List<string>();
             _pubHistory = new List<Publication>();
-
-            _site = site;
-            _puppetMasterURL = puppetMasterURL;
+            
             _nodeProcess.StartInfo.FileName = "..\\..\\..\\Publisher\\bin\\Debug\\Publisher.exe";
         }
 

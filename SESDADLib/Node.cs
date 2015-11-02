@@ -19,6 +19,7 @@ namespace SESDADLib {
             _processName = processName;
             _processURL = processURL;
             _site = site;
+            _puppetMasterURL = puppetMasterURL;
             _nodeProcess = new Process();
         }
 
