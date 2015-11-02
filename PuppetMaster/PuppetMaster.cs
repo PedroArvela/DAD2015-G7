@@ -508,8 +508,24 @@ namespace PuppetMaster
             System.Threading.Thread.Sleep(time);
         }
         public void crash(String processName) {
-            Console.WriteLine("Crash Resquest");
-            //TODO: something
+            foreach (Broker.Broker b in _brokers) {
+                if (b.getProcessName().Equals(processName)) {
+                    b.closeProcess();
+                    return;
+                }
+            }
+            foreach (Publisher.Publisher p in _publishers) {
+                if (p.getProcessName().Equals(processName)) {
+                    p.closeProcess();
+                    return;
+                }
+            }
+            foreach (Subscriber.Subscriber s in _subscribers) {
+                if (s.getProcessName().Equals(processName)) {
+                    s.closeProcess();
+                    return;
+                }
+            }
         }
         public void logginLevel(String level) {
             Console.WriteLine("Logging Request");

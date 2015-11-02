@@ -40,5 +40,10 @@ namespace SESDADLib {
         protected abstract string getArguments();
 
         public abstract void executeProcess();
+
+        public void closeProcess() {
+            _nodeProcess.Kill();
+            _executing = false;
+        }
     }
 }
