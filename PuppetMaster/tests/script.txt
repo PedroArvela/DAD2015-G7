@@ -1,0 +1,4 @@
+Import ..\..\tests\config.txt
+StartNetwork
+Status
+Wait 2000
