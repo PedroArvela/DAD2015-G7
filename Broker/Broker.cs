@@ -100,9 +100,8 @@ namespace Broker {
                 arguments += " -p " + parent;
             }
             foreach (string child in _childProcessesURL) {
-                arguments += " -p" + child;
+                arguments += " -c " + child;
             }
-
             return arguments;
         }
 
