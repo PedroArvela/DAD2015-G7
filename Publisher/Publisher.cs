@@ -101,5 +101,9 @@ namespace Publisher{
             _nodeProcess.StartInfo.Arguments = this.getArguments();
             _nodeProcess.Start();
         }
+
+        public override void OnRunCommand(String command) {
+            throw new NotImplementedException();
+        }
     }
 }

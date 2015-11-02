@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 namespace PuppetMaster
 {
     public class PuppetMaster {
+
         private List<Broker.Broker> _brokers;
         private List<Publisher.Publisher> _publishers;
         private List<Subscriber.Subscriber> _subscribers;
@@ -35,7 +36,7 @@ namespace PuppetMaster
                 Console.Write("#: ");
                 String input = Console.ReadLine();
                 open = master.processCommand(input);
-            } 
+            }
         }
 
         public PuppetMaster(string processURL) {
@@ -98,10 +99,14 @@ namespace PuppetMaster
             if (parentSite.Equals("none") && networkTree == null) {
                 networkTree = new element(site, null);
                 writeToLog(site + " is root Root site");
-            } else if ((parent = this.findElement(networkTree, parentSite)) != null){
+            } else if ((parent = this.findElement(networkTree, parentSite)) != null) {
                 parent.addChild(new element(site, parent));
                 writeToLog(site + " created - parent site: " + parentSite);
             }
+        }
+        
+        public void runCommandOnNode(string nodeName, string comand) {
+            throw new NotImplementedException();
         }
 
         public bool processCommand(String command) {
@@ -322,7 +327,15 @@ namespace PuppetMaster
         }
 
         private void startNetwork() {
-            throw new NotImplementedException();
+            foreach (Broker.Broker b in _brokers) {
+                startProcess("broker", b.getProcessName());
+            }
+            foreach (Publisher.Publisher p in _publishers) {
+                startProcess("publisher", p.getProcessName());
+            }
+            foreach (Subscriber.Subscriber s in _subscribers) {
+                startProcess("subscriber", s.getProcessName());
+            }
         }
 
         private void startProcess(string type, string name) {

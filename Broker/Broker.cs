@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.Remoting.Channels;
+using System.Runtime.Remoting.Channels.Tcp;
 using SESDADLib;
 
 namespace Broker {
     public class Broker : Node, IBroker {
         private bool _routingPolicy;
-
+        
         private Dictionary<string, int> _subscribersTopics = new Dictionary<string, int>(); //key == topic, value == #subscribers
         private List<string> _parentProcessesURL = new List<string>();
         private List<string> _childProcessesURL = new List<string>();
@@ -94,6 +96,10 @@ namespace Broker {
         public override void executeProcess() {
             _nodeProcess.StartInfo.Arguments = this.getArguments();
             _nodeProcess.Start();
+        }
+
+        public override void OnRunCommand(String command) {
+            throw new NotImplementedException();
         }
     }
 }

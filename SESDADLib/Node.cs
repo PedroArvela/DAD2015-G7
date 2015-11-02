@@ -32,6 +32,9 @@ namespace SESDADLib {
 
         public abstract void printNode();
 
+        //Method to run when a command is published by the PuppetMaster
+        public abstract void OnRunCommand(string command);
+
         protected abstract string getArguments();
 
         public abstract void executeProcess();
