@@ -26,7 +26,7 @@ namespace Subscriber {
             for (int i = 0; i < brokers.Count; i++) {
                 s.addBrokerURL(brokers[i]);
             }
-
+            s.publishToPuppetMaster();
             //TODO: DO STUFF WITH P
 
             //TEST CODE

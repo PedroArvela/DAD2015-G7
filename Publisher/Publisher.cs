@@ -1,6 +1,7 @@
 ﻿using SESDADLib;
 using System;
 using System.Collections.Generic;
+using System.Runtime.Remoting;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
 
@@ -22,6 +23,7 @@ namespace Publisher{
             for (int i = 0; i < brokers.Count; i++) {
                 p.addBrokerURL(brokers[i]);
             }
+            p.publishToPuppetMaster();
 
             //TODO: DO STUFF WITH P
 
@@ -99,6 +101,18 @@ namespace Publisher{
             _nodeProcess.StartInfo.Arguments = this.getArguments();
             _nodeProcess.Start();
             _executing = true;
+        }
+
+        public override void publishToPuppetMaster() {
+            int port = Int32.Parse(_processURL.Split(':')[2].Split('/')[0]);
+            string uri = _processURL.Split(':')[2].Split('/')[1];
+
+            Console.WriteLine("Publishing on port: " + port.ToString() + " with uri: " + uri);
+
+            TcpChannel channel = new TcpChannel(port);
+            ChannelServices.RegisterChannel(channel, false);
+
+            RemotingServices.Marshal(this, uri, typeof(Publisher));
         }
     }
 }

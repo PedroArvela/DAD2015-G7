@@ -34,6 +34,8 @@ namespace SESDADLib {
 
         public abstract void printNode();
 
+        public abstract void publishToPuppetMaster();
+
         protected abstract string getArguments();
 
         public abstract void executeProcess();

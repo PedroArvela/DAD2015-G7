@@ -76,7 +76,7 @@ namespace Broker {
             throw new NotImplementedException();
         }
 
-        public void publishToPuppetMaster() {
+        public override void publishToPuppetMaster() {
             int port = Int32.Parse(_processURL.Split(':')[2].Split('/')[0]);
             string uri = _processURL.Split(':')[2].Split('/')[1];
 

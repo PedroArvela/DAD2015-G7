@@ -17,7 +17,7 @@ namespace Subscriber {
             _siteBrokerUrl = new List<string>();
 
             _nodeProcess.StartInfo.FileName = "..\\..\\..\\Subscriber\\bin\\Debug\\Subscriber.exe";
-            selfRegister();
+            //FIXME: selfRegister();
         }
 
         public void addTopic(string topic) {
@@ -116,6 +116,18 @@ namespace Subscriber {
             _nodeProcess.StartInfo.Arguments = this.getArguments();
             _nodeProcess.Start();
             _executing = true;
+        }
+
+        public override void publishToPuppetMaster() {
+            int port = Int32.Parse(_processURL.Split(':')[2].Split('/')[0]);
+            string uri = _processURL.Split(':')[2].Split('/')[1];
+
+            Console.WriteLine("Publishing on port: " + port.ToString() + " with uri: " + uri);
+
+            TcpChannel channel = new TcpChannel(port);
+            ChannelServices.RegisterChannel(channel, false);
+
+            RemotingServices.Marshal(this, uri, typeof(Subscriber));
         }
     }
 }
