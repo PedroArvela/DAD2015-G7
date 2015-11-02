@@ -115,10 +115,7 @@ namespace Subscriber {
         public override void executeProcess() {
             _nodeProcess.StartInfo.Arguments = this.getArguments();
             _nodeProcess.Start();
-        }
-
-        public override void OnRunCommand(String command) {
-            throw new NotImplementedException();
+            _executing = true;
         }
     }
 }

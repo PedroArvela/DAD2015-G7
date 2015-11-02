@@ -1,9 +1,10 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.Remoting;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
 using SESDADLib;
+
 
 namespace Broker {
     public class Broker : Node, IBroker {
@@ -75,6 +76,18 @@ namespace Broker {
             throw new NotImplementedException();
         }
 
+        public void publishToPuppetMaster() {
+            int port = Int32.Parse(_processURL.Split(':')[2].Split('/')[0]);
+            string uri = _processURL.Split(':')[2].Split('/')[1];
+
+            Console.WriteLine("Publishing on port: " + port.ToString() + " with uri: " + uri);
+
+            TcpChannel channel = new TcpChannel(port);
+            ChannelServices.RegisterChannel(channel, false);
+
+            RemotingServices.Marshal(this, uri, typeof(Broker));
+        }
+
         public override void printNode() {
             Console.WriteLine(this.showNode());
         }
@@ -96,9 +109,14 @@ namespace Broker {
         public override void executeProcess() {
             _nodeProcess.StartInfo.Arguments = this.getArguments();
             _nodeProcess.Start();
+            _executing = true;
         }
 
-        public override void OnRunCommand(String command) {
+        public void subscribe(string topic) {
+            throw new NotImplementedException();
+        }
+
+        public void unsubscribe(string topic) {
             throw new NotImplementedException();
         }
     }

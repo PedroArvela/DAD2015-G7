@@ -6,6 +6,9 @@ using System.Text.RegularExpressions;
 using Element;
 using SESDADLib;
 using System.Linq;
+using System.Runtime.Remoting;
+using System.Runtime.Remoting.Channels;
+using System.Runtime.Remoting.Channels.Tcp;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -18,6 +21,10 @@ namespace PuppetMaster
         private List<Subscriber.Subscriber> _subscribers;
         private element networkTree = null; //holds tree for elements in network
 
+        private Broker.Broker _remoteBroker = null;
+        private Publisher.Publisher _remotePub = null;
+        private Subscriber.Subscriber _remoteSub = null;
+
         private bool loggingLevel = false;
         private String logFile = ".\\Logfile.txt";
         private String routingLevel = "Flooding";
@@ -28,7 +35,8 @@ namespace PuppetMaster
         static void Main(string[] args) {
 
             //TODO: something
-            PuppetMaster master = new PuppetMaster("tcp://1.2.3.4:1234/puppetMaster");
+            PuppetMaster master = new PuppetMaster("tcp://localhost:9999/puppetMaster");
+            master.announcePuppetMaster();
             bool open = true;
 
             Console.WriteLine("Welcome!\n" + Directory.GetCurrentDirectory());
@@ -109,9 +117,64 @@ namespace PuppetMaster
             throw new NotImplementedException();
         }
 
+        public void announcePuppetMaster() {
+            int port = Int32.Parse(_masterURL.Split(':')[2].Split('/')[0]);
+
+            TcpChannel channel = new TcpChannel(port);
+            ChannelServices.RegisterChannel(channel, false);
+        }
+
+        public void connectToNode(string type, string name) {
+            Node target = null;
+            bool fail = false;
+            foreach (Broker.Broker br in _brokers) {
+                if (br.getProcessName() == name) {
+                    target = br;
+                }
+            }
+            foreach (Subscriber.Subscriber sr in _subscribers) {
+                if (sr.getProcessName() == name) {
+                    target = sr;
+                }
+            }
+            foreach (Publisher.Publisher pr in _publishers) {
+                if (pr.getProcessName() == name) {
+                    target = pr;
+                }
+            }
+
+            switch (type) {
+                case "broker":
+                    _remoteBroker = (Broker.Broker)Activator.GetObject(typeof(Broker.Broker), target.getProcessURL());
+                    if (_remoteBroker == null) {
+                        fail = true;
+                    }
+                    break;
+                case "subscriber":
+                    _remoteSub = (Subscriber.Subscriber)Activator.GetObject(typeof(Subscriber.Subscriber), target.getProcessURL());
+                    if (_remoteSub == null) {
+                        fail = true;
+                    }
+                    break;
+                case "publisher":
+                    _remotePub = (Publisher.Publisher)Activator.GetObject(typeof(Publisher.Publisher), target.getProcessURL());
+                    if (_remotePub == null) {
+                        fail = true;
+                    }
+                    break;
+            }
+            
+            if (fail) {
+                Console.WriteLine("Could not extablish Proxy to " + target.getProcessURL());
+            }
+            else {
+                Console.WriteLine("Established Proxy to: " + target.getProcessURL());
+            }
+        }
+
         public bool processCommand(String command) {
             String sitePatern = "^Site\\s[A-Za-z0-9]+\\sParent\\s[A-Za-z0-9]+$";
-            String processPatern = "^Process\\s[A-Za-z0-9]+\\sIs\\s(broker|publisher|subscriber)\\sOn\\s[A-Za-z0-9]+\\sURL\\stcp://([0-9]+\\.){3}[0-9]:[0-9]{3,}/[A-Za-z]+$";
+            String processPatern = "^Process\\s[A-Za-z0-9]+\\sIs\\s(broker|publisher|subscriber)\\sOn\\s[A-Za-z0-9]+\\sURL\\stcp://((([0-9]+\\.){3}[0-9])|localhost):[0-9]{3,}/[A-Za-z]+$";
             String routingPatern = "^RoutingPolicy(flooding|filter)$";
             String orderingPatern = "^Ordering\\s(NO|FIFO|TOTAL)$";
             String subPatern = "^Subscriber\\s[A-Za-z0-9]+\\sSubscribe\\s[A-Za-z0-9]+$";
@@ -130,6 +193,7 @@ namespace PuppetMaster
             String startNetwork = "^StartNetwork$";
             String startProcess = "^Start\\s(broker|subscriber|publisher)\\s[A-Za-z0-9]+$";
             String showPatern = "^Show$";
+            String showNodePatern = "^ShowNode\\s(broker|subscriber|publisher)\\s[A-Za-z0-9]+$";
             String quitPatern = "^Quit|Exit$";
 
             List<Regex> regs = new List<Regex>();
@@ -150,6 +214,7 @@ namespace PuppetMaster
             regs.Add(new Regex(waitPatern, RegexOptions.None));
             regs.Add(new Regex(loggingPatern, RegexOptions.None));
             regs.Add(new Regex(showPatern, RegexOptions.None));
+            regs.Add(new Regex(showNodePatern, RegexOptions.None));
             regs.Add(new Regex(importFile, RegexOptions.None));
             regs.Add(new Regex(importScript, RegexOptions.None));
             regs.Add(new Regex(changeLogPath, RegexOptions.None));
@@ -221,6 +286,9 @@ namespace PuppetMaster
                         break;
                     case "Show":
                         this.printSiteTree(networkTree);
+                        break;
+                    case "ShowNode":
+                        this.connectToNode(parsed[1], parsed[2]);
                         break;
                     case "StartNetwork":
                         this.startNetwork();
@@ -407,7 +475,25 @@ namespace PuppetMaster
         }
         public void Status() {
             Console.WriteLine("Status request");
-            //TODO: something
+            foreach (Broker.Broker b in _brokers) {
+                if (b.getExecuting()) {
+                    this.connectToNode("broker", b.getProcessName());
+                    Console.WriteLine(_remoteBroker.showNode());
+                }
+            }
+            foreach (Subscriber.Subscriber s in _subscribers) {
+                if (s.getExecuting()) {
+                    this.connectToNode("subscriber", s.getProcessName());
+                    Console.WriteLine(_remoteSub.showNode());
+                }
+            }
+            foreach (Publisher.Publisher p in _publishers) {
+                if (p.getExecuting()) {
+                    this.connectToNode("publisher", p.getProcessName());
+                    Console.WriteLine(_remotePub.showNode());
+                }
+            }
+
         }
         public void freeze(String processName) {
             Console.WriteLine("Freeze Request");

@@ -38,7 +38,9 @@ namespace Broker {
             foreach (string p in parentList) {
                 b.addParentUrl(p);
             }
-            while (true) ;
+            b.publishToPuppetMaster();
+            while (true) {
+            }
             //TODO: actual code with broker b
         }
     }
