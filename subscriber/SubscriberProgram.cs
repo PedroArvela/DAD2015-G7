@@ -22,19 +22,15 @@ namespace Subscriber {
                 if (args[i] == "-b") brokers.Add(args[i + 1]);
             }
 
-            Subscriber p = new Subscriber(processName, processURL, brokers[0], puppetMasterURL);
-            for (int i = 1; i < brokers.Count; i++) {
-                p.addBrokerURL(brokers[i]);
+            Subscriber s = new Subscriber(processName, processURL, site, puppetMasterURL);
+            for (int i = 0; i < brokers.Count; i++) {
+                s.addBrokerURL(brokers[i]);
             }
 
             //TODO: DO STUFF WITH P
 
             //TEST CODE
-            Subscriber sub = new Subscriber("aaa", "tcp://localhost:1337/subscriber", "aaa", "ccc");
 
-            TcpChannel channel = new TcpChannel(1337);
-            ChannelServices.RegisterChannel(channel, false);
-            RemotingServices.Marshal(sub, "subscriber", typeof(ISubscriber));
             Console.ReadLine();
         }
     }

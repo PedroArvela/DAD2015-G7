@@ -17,33 +17,29 @@ namespace Publisher{
             for (int i = 4; i < args.Length; i += 2) {
                 if(args[i] == "-b") brokers.Add(args[i + 1]);
             }
-
-            Publisher p = new Publisher(processName, processURL, brokers[0], puppetMasterURL);
-            for (int i = 1; i < brokers.Count; i++) {
+            
+            Publisher p = new Publisher(processName, processURL, site, puppetMasterURL);
+            for (int i = 0; i < brokers.Count; i++) {
                 p.addBrokerURL(brokers[i]);
             }
 
             //TODO: DO STUFF WITH P
 
             //TEST CODE
-            Publisher pub = new Publisher("process1", "23232", "tcp://127.0.0.1:1337/subscriber", "232");
-            pub.Publish(new Publication("191.2.3.4", "DAD", "Projecto", "Projecto de DAD", new DateTime()));
             System.Console.Read();
         }
         
         private List<string> _siteBrokerUrl;
         private List<string> _topics;
         private List<Publication> _pubHistory;
-        private string _fatherNodeURL;
 
-        public Publisher(string processName, string processURL, string fatherNodeURL, string puppetMasterURL) : base(processName, processURL, fatherNodeURL, puppetMasterURL) {
-            _siteBrokerUrl = new List<string>(); // Quando tiver mais que um broker
+        public Publisher(string processName, string processURL, string site, string puppetMasterURL) : base(processName, processURL, site, puppetMasterURL) {
+            _siteBrokerUrl = new List<string>();
             _topics = new List<string>();
             _pubHistory = new List<Publication>();
-            
-            _puppetMasterURL = puppetMasterURL;
-            _fatherNodeURL = fatherNodeURL; // Apenas 1 broker
 
+            _site = site;
+            _puppetMasterURL = puppetMasterURL;
             _nodeProcess.StartInfo.FileName = "..\\..\\..\\Publisher\\bin\\Debug\\Publisher.exe";
         }
 
@@ -60,11 +56,13 @@ namespace Publisher{
 
             TcpChannel channel = new TcpChannel();
             ChannelServices.RegisterChannel(channel, false);
-            ISubscriber sub = (ISubscriber)Activator.GetObject(typeof(ISubscriber), _fatherNodeURL);
-            if(sub == null)
-                System.Console.WriteLine("Could not locate father node");
-            else
-                sub.newPublication(pub);
+            foreach(string parentNode in _siteBrokerUrl) {
+                ISubscriber sub = (ISubscriber)Activator.GetObject(typeof(ISubscriber), parentNode);
+                if(sub == null)
+                    System.Console.WriteLine("Could not locate parent node");
+                else
+                    sub.newPublication(pub);
+            }
         }
 
         public override void printNode() {

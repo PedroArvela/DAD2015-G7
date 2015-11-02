@@ -1,6 +1,9 @@
 ﻿using SESDADLib;
 using System;
 using System.Collections.Generic;
+using System.Runtime.Remoting;
+using System.Runtime.Remoting.Channels;
+using System.Runtime.Remoting.Channels.Tcp;
 
 namespace Subscriber {
     public class Subscriber : Node, ISubscriber {
@@ -14,9 +17,20 @@ namespace Subscriber {
             _siteBrokerUrl = new List<string>();
 
             _nodeProcess.StartInfo.FileName = "..\\..\\..\\Subscriber\\bin\\Debug\\Subscriber.exe";
+            selfRegister();
         }
 
-        public void addTopic(string topic) { _subscriptionTopics.Add(topic); }
+        public void addTopic(string topic) {
+            _subscriptionTopics.Add(topic);
+        }
+
+        public void selfRegister()
+        {
+            TcpChannel channel = new TcpChannel(1337);
+            ChannelServices.RegisterChannel(channel, false);
+            RemotingServices.Marshal(this, "subscriber", typeof(ISubscriber));
+        }
+
         public void addToHistory(Publication pub) {
             string topic = pub._topic;
             if (_subscriptionHistory[topic] == null) {
@@ -28,15 +42,34 @@ namespace Subscriber {
         }
 
         public void subscribe(string topic) {
-            //TODO: something
+            TcpChannel channel = new TcpChannel();
+            ChannelServices.RegisterChannel(channel, false);
+            foreach (string parentNode in _siteBrokerUrl)
+            {
+                IBroker broker = (IBroker)Activator.GetObject(typeof(ISubscriber), parentNode);
+                if (broker == null)
+                    System.Console.WriteLine("Could not locate parent node");
+                else
+                    broker.subscribe(topic);
+            }
         }
 
         public void unsubscribe(string topic) {
-            //TODO: something
+            TcpChannel channel = new TcpChannel();
+            ChannelServices.RegisterChannel(channel, false);
+            foreach (string parentNode in _siteBrokerUrl)
+            {
+                IBroker broker = (IBroker)Activator.GetObject(typeof(ISubscriber), parentNode);
+                if (broker == null)
+                    System.Console.WriteLine("Could not locate parent node");
+                else
+                    broker.unsubscribe(topic);
+            }
         }
 
         // Callback for brokers to use to send the data
         public void newPublication(Publication pub) {
+            addToHistory(pub);
             Console.WriteLine(pub._content);
         }
 
