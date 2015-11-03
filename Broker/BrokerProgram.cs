@@ -39,9 +39,11 @@ namespace Broker {
                 b.addParentUrl(p);
             }
             b.publishToPuppetMaster();
+
+            //Broker program Logic
             while (true) {
+                b.processQueue();
             }
-            //TODO: actual code with broker b
         }
     }
 }

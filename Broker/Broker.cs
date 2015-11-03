@@ -54,6 +54,8 @@ namespace Broker {
             return (_delayed = !_delayed);
         }
 
+        public void setRoutingPolicy(bool policy) { _routingPolicy = policy; }
+
         public override string showNode() {
             string print = "\tBroker: " + _processName + " for " + _site + " active on " + _processURL + "\n";
             print += "\tParent Broker URL(s):\n";
@@ -81,18 +83,27 @@ namespace Broker {
             Broker remoteB = null;
             foreach (string url in _childProcessesURL) {
                 if (!_routingPolicy) {
+                    //flood all available brokers
                     remoteB = (Broker)Activator.GetObject(typeof(Broker), url);
                     remoteB.addToQueue(pub);
+                    Console.WriteLine("Publication sent to: " + url);
                 } else {
                     //verify if next broker in chain is elegible
                 }
+                //verofy if any subscriber is elegible
             }
         }
 
         public void processQueue() {
-            lock (_queueLock) {
-                //TODO check if there are elegible subscribers
-                this.sendPublication(_queue.Dequeue());
+            Publication pub = null;
+            if (_queue.Count > 0 && _enabled) {
+                lock (_queueLock) {
+                    pub = _queue.Dequeue();
+                    Console.WriteLine("Processing: " + pub.ToString());
+                    this.sendPublication(pub);
+                }
+            } else {
+                //nothing to do
             }
         }
 

@@ -27,7 +27,6 @@ namespace PuppetMaster
 
         private bool loggingLevel = false;
         private String logFile = ".\\Logfile.txt";
-        private String routingLevel = "Flooding";
         private String orderLevel = "NO";
         private String _masterURL = "";
         private StreamWriter logFilePipe;
@@ -192,6 +191,7 @@ namespace PuppetMaster
             String startProcess = "^Start\\s(broker|subscriber|publisher)\\s[A-Za-z0-9]+$";
             String showPatern = "^Show$";
             String showNodePatern = "^ShowNode\\s(broker|subscriber|publisher)\\s[A-Za-z0-9]+$";
+            String SpawnPublicationPatern = "^SpawnPublication\\s[A-Za-z0-9]+$";
             String quitPatern = "^Quit|Exit$";
 
             List<Regex> regs = new List<Regex>();
@@ -218,6 +218,7 @@ namespace PuppetMaster
             regs.Add(new Regex(changeLogPath, RegexOptions.None));
             regs.Add(new Regex(startNetwork, RegexOptions.None));
             regs.Add(new Regex(startProcess, RegexOptions.None));
+            regs.Add(new Regex(SpawnPublicationPatern, RegexOptions.None));
             regs.Add(new Regex(quitPatern, RegexOptions.None));
 
             foreach (Regex r in regs) {
@@ -240,7 +241,7 @@ namespace PuppetMaster
                         this.createProcess(parsed[1], parsed[3], parsed[5], parsed[7]);
                         break;
                     case "RoutingPolicy":
-                        routingLevel = parsed[1];
+                        this.changeRoutingLevel(parsed[1]);
                         break;
                     case "Ordering":
                         orderLevel = parsed[1];
@@ -293,6 +294,9 @@ namespace PuppetMaster
                         break;
                     case "Start":
                         this.startProcess(parsed[1], parsed[2]);
+                        break;
+                    case "SpawnPublication":
+                        this.spawnPublication(parsed[1]);
                         break;
                     case "Exit":
                         wipeNetwork();
@@ -474,6 +478,31 @@ namespace PuppetMaster
                 writeToLog("Process " + name + " cannot be started - Non-Existant");
                 Console.WriteLine("Process " + name + " cannot be started - Non-Existant");
             }
+        }
+
+        public void spawnPublication(string processName) {
+            foreach (Broker.Broker b in _brokers) {
+                if (b.getProcessName().Equals(processName) && b.getExecuting()) {
+                    connectToNode("broker", processName);
+                    _remoteBroker.addToQueue(new Publication(b.getSite(), "demoTopic", "demoSubject", "demoContent", new DateTime()));
+                    return;
+                }
+            }
+        }
+
+        public void changeRoutingLevel(string level) {
+            bool policy = true;
+            if (level.Equals("flooding")) {
+                policy = false;
+            }
+
+            foreach (Broker.Broker b in _brokers) {
+                if (b.getExecuting()) {
+                    this.connectToNode("broker", b.getProcessName());
+                    _remoteBroker.setRoutingPolicy(policy);
+                }
+            }
+
         }
 
         public void Subscribe(String processName, String topicName) {
