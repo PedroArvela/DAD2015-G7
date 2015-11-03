@@ -9,16 +9,19 @@ using SESDADLib;
 namespace Broker {
     public class Broker : Node, IBroker {
         private bool _routingPolicy;
-        
+        private Queue<Publication> _queue;
+        private Object _queueLock = new Object();
+
         private Dictionary<string, int> _subscribersTopics = new Dictionary<string, int>(); //key == topic, value == #subscribers
         private List<string> _parentProcessesURL = new List<string>();
         private List<string> _childProcessesURL = new List<string>();
-        
+
         private bool _delayed = false;
         private int _delayTime = 0;
 
         public Broker(string processName, string processURL, string site, string routingtype, string puppetMasterURL) : base(processName, processURL, site, puppetMasterURL) {
             _puppetMasterURL = puppetMasterURL;
+            _queue = new Queue<Publication>();
             switch (routingtype) {
                 case "flooding":
                     _routingPolicy = false;
@@ -31,7 +34,7 @@ namespace Broker {
             //process start arguments
             _nodeProcess.StartInfo.FileName = "..\\..\\..\\Broker\\bin\\Debug\\Broker.exe";
         }
-        
+
         public List<string> getParentURL() { return _parentProcessesURL; }
         public List<string> getChildURL() { return _childProcessesURL; }
 
@@ -68,12 +71,29 @@ namespace Broker {
             return print;
         }
 
-        public void newPublication(Publication pub) {
-            throw new NotImplementedException();
+        public void addToQueue(Publication p) {
+            lock (_queueLock) {
+                _queue.Enqueue(p);
+            }
         }
 
         public void sendPublication(Publication pub) {
-            throw new NotImplementedException();
+            Broker remoteB = null;
+            foreach (string url in _childProcessesURL) {
+                if (!_routingPolicy) {
+                    remoteB = (Broker)Activator.GetObject(typeof(Broker), url);
+                    remoteB.addToQueue(pub);
+                } else {
+                    //verify if next broker in chain is elegible
+                }
+            }
+        }
+
+        public void processQueue() {
+            lock (_queueLock) {
+                //TODO check if there are elegible subscribers
+                this.sendPublication(_queue.Dequeue());
+            }
         }
 
         public override void publishToPuppetMaster() {
@@ -116,6 +136,10 @@ namespace Broker {
         }
 
         public void unsubscribe(string topic) {
+            throw new NotImplementedException();
+        }
+
+        public void newPublication(Publication pub) {
             throw new NotImplementedException();
         }
     }
