@@ -82,7 +82,7 @@ namespace Subscriber {
         }
 
         public override string showNode() {
-            String print = "Subscriber: " + _processName + "for " + _site + " active on " + _processURL + "\n";
+            String print = "Subscriber: " + _processName + " for " + _site + " active on " + _processURL + "\n";
             print += "\tConnected on broker:\n";
             foreach (string broker in _siteBrokerUrl) {
                 print += "\t\t";

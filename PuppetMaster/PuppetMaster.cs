@@ -33,8 +33,6 @@ namespace PuppetMaster
         private StreamWriter logFilePipe;
 
         static void Main(string[] args) {
-
-            //TODO: something
             PuppetMaster master = new PuppetMaster("tcp://localhost:1337/puppetMaster");
             master.announcePuppetMaster();
             bool open = true;

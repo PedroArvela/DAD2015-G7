@@ -52,7 +52,7 @@ namespace Broker {
         }
 
         public override string showNode() {
-            string print = "\tBroker: " + _processName + "for " + _site + " active on " + _processURL + "\n";
+            string print = "\tBroker: " + _processName + " for " + _site + " active on " + _processURL + "\n";
             print += "\tParent Broker URL(s):\n";
             foreach (string purl in _parentProcessesURL) {
                 print += "\t\t" + purl + "\n";

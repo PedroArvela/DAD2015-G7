@@ -6,31 +6,7 @@ using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
 
 namespace Publisher{
-    public class Publisher : Node{
-        static void Main(string[] args) {
-            //processNAme processURL site puppetMAsterURL -b brokerURL
-            string processName = args[0];
-            string processURL = args[1];
-            string site = args[2];
-            string puppetMasterURL = args[3];
-
-            List<string> brokers = new List<string>();
-            for (int i = 4; i < args.Length; i += 2) {
-                if(args[i] == "-b") brokers.Add(args[i + 1]);
-            }
-            
-            Publisher p = new Publisher(processName, processURL, site, puppetMasterURL);
-            for (int i = 0; i < brokers.Count; i++) {
-                p.addBrokerURL(brokers[i]);
-            }
-            p.publishToPuppetMaster();
-
-            //TODO: DO STUFF WITH P
-
-            //TEST CODE
-            System.Console.Read();
-        }
-        
+    public class Publisher : Node{   
         private List<string> _siteBrokerUrl;
         private List<string> _topics;
         private List<Publication> _pubHistory;
@@ -70,7 +46,7 @@ namespace Publisher{
         }
 
         public override string showNode() {
-            string print = "Publisher: " + _processName + "for " + _site + " active on " + _processURL + "\n";
+            string print = "Publisher: " + _processName + " for " + _site + " active on " + _processURL + "\n";
             print += "\tConnected on broker:\n";
             foreach (string broker in _siteBrokerUrl) {
                 print += "\t\t" + broker + "\n";

@@ -67,22 +67,22 @@ namespace Element
             string print = "----" + _site + "----\n";
                         
             if (_parent == null) {
-                print += "\tParent: none";
+                print += "\tParent: none\n";
             } else {
-                print += "\tParent: " + _parent.getSite();
+                print += "\tParent: " + _parent.getSite() + "\n";
             }
-            print += "\tRegistered Brokers: " + _brokers.Count;
-            print += "\tRegistered Subscribers: " + _subscribers.Count;
-            print += "\tRegistered Publishers: " + _publishers.Count;
-            print += "---Brokers---";
+            print += "\tRegistered Brokers: " + _brokers.Count + "\n";
+            print += "\tRegistered Subscribers: " + _subscribers.Count + "\n";
+            print += "\tRegistered Publishers: " + _publishers.Count + "\n";
+            print += "---Brokers---\n";
             foreach (Broker.Broker b in _brokers) {
                 print += b.showNode();
             }
-            print += "---Publishers---";
+            print += "---Publishers---\n";
             foreach (Publisher.Publisher p in _publishers){
                 print += p.showNode();
             }
-            print += "---Subscribers---";
+            print += "---Subscribers---\n";
             foreach (Subscriber.Subscriber s in _subscribers) {
                 print += s.showNode();
             }
