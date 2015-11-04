@@ -4,6 +4,7 @@ using System.Runtime.Remoting;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
 using SESDADLib;
+using Subscriber;
 
 
 namespace Broker {
@@ -12,7 +13,8 @@ namespace Broker {
         private Queue<Publication> _queue;
         private Object _queueLock = new Object();
 
-        private Dictionary<string, int> _subscribersTopics = new Dictionary<string, int>(); //key == topic, value == #subscribers
+        private Dictionary<string, List<string>> _subscribersTopics = new Dictionary<string, List<string>>(); //key == topic, value == #interestedURL's
+        private List<string> _subscribers = new List<string>();
         private List<string> _parentProcessesURL = new List<string>();
         private List<string> _childProcessesURL = new List<string>();
 
@@ -22,6 +24,7 @@ namespace Broker {
         public Broker(string processName, string processURL, string site, string routingtype, string puppetMasterURL) : base(processName, processURL, site, puppetMasterURL) {
             _puppetMasterURL = puppetMasterURL;
             _queue = new Queue<Publication>();
+            _subscribersTopics = new Dictionary<string, List<string>>();
             switch (routingtype) {
                 case "flooding":
                     _routingPolicy = false;
@@ -68,9 +71,64 @@ namespace Broker {
             }
             print += "\tTopic(s):\n";
             foreach (string topic in _subscribersTopics.Keys) {
-                print += "\t\t" + topic + "with " + _subscribersTopics[topic].ToString() + "subscribers\n";
+                print += "\t\t" + topic + " has the following interested urls:\n";
+                foreach(string url in _subscribersTopics[topic]) {
+                    print += "\t\t\t" + url + "\n";
+                }
+            }
+            print += "\tSubscriber(s):\n";
+            foreach(string subscriber in _subscribers) {
+                print += "\t\t" + subscriber + "\n";
             }
             return print;
+        }
+
+        private void removeTopic(string topic, string interestedURL) {
+            Console.WriteLine("Removing from interest list...");
+
+            if (_subscribersTopics[topic] == null) {
+                Console.WriteLine("No topic matching " + topic + " found");
+                return;
+            } else {
+                _subscribersTopics[topic].Remove(interestedURL);
+                Console.WriteLine("Removed from topic " + topic + " intereste url " + interestedURL);
+            }
+            if (_subscribersTopics[topic].Count == 0) {
+                Console.WriteLine("Topic no longer has any interested url");
+                _subscribersTopics.Remove(topic);
+            }
+        }
+
+        private void addTopic(string topic, string interestedURL) {
+            List<string> interest = null;
+            bool found = false;
+
+            Console.WriteLine("Adding to interest List...");
+            if (_subscribersTopics[topic] == null) {
+                interest = new List<string>();
+                interest.Add(interestedURL);
+                _subscribersTopics.Add(topic, interest);
+                if (!_childProcessesURL.Contains(interestedURL) && !_parentProcessesURL.Contains(interestedURL)) {
+                    _subscribers.Add(interestedURL);
+                }
+                Console.WriteLine("New topic " + interestedURL + " added with interested url " + interestedURL);
+            } else {
+                interest = _subscribersTopics[topic];
+                foreach (string url in interest) {
+                    if (interestedURL.Equals(url)) {
+                        found = true;
+                        Console.WriteLine("URL already on interest list");
+                        break;
+                    }
+                }
+                if (!found) {
+                    Console.WriteLine("URL: " + interestedURL + " added to topic " + topic);
+                    interest.Add(interestedURL);
+                    if (!_childProcessesURL.Contains(interestedURL) && !_parentProcessesURL.Contains(interestedURL)) {
+                        _subscribers.Add(interestedURL);
+                    }
+                }
+            }
         }
 
         public void addToQueue(Publication p) {
@@ -81,16 +139,30 @@ namespace Broker {
 
         public void sendPublication(Publication pub) {
             Broker remoteB = null;
-            foreach (string url in _childProcessesURL) {
-                if (!_routingPolicy) {
+            Subscriber.Subscriber remoteS = null;
+
+            
+            if (!_routingPolicy) {
+                foreach (string url in _childProcessesURL) {
                     //flood all available brokers
                     remoteB = (Broker)Activator.GetObject(typeof(Broker), url);
                     remoteB.addToQueue(pub);
                     Console.WriteLine("Publication sent to: " + url);
-                } else {
-                    //verify if next broker in chain is elegible
                 }
-                //verofy if any subscriber is elegible
+            } else {
+                foreach (string interestedTopic in _subscribersTopics.Keys) {
+                    if (interestedTopic.Equals(pub.getTopic())) {
+                        foreach (string interestedURL in _subscribersTopics[interestedTopic]) {
+                            if (_subscribers.Contains(interestedURL)) {
+                                remoteS = (Subscriber.Subscriber)Activator.GetObject(typeof(Subscriber.Subscriber), interestedURL);
+                                remoteS.addToHistory(pub);
+                            } else {
+                                remoteB = (Broker)Activator.GetObject(typeof(Broker), interestedURL);
+                                remoteB.addToQueue(pub);
+                            }
+                        }
+                    }
+                }        
             }
         }
 
@@ -100,6 +172,7 @@ namespace Broker {
                 lock (_queueLock) {
                     pub = _queue.Dequeue();
                     Console.WriteLine("Processing: " + pub.ToString());
+                    //TODO: if pub is actualy a subscription request, or unsubscription call diferent function than "sendPublication"
                     this.sendPublication(pub);
                 }
             } else {

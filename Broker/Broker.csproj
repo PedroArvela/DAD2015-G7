@@ -60,6 +60,10 @@
       <Project>{9f1e220f-e8fa-4455-8b40-9bd284771bd4}</Project>
       <Name>SESDADLib</Name>
     </ProjectReference>
+    <ProjectReference Include="..\subscriber\Subscriber.csproj">
+      <Project>{3a80a74a-0d0c-449b-9e87-34ad3665373f}</Project>
+      <Name>Subscriber</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

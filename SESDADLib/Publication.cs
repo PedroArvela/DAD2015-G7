@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 namespace SESDADLib {
     [Serializable]
     public class Publication {
+        private bool _subType;
         public string _site;
         public string _topic;
         public string _subject;
@@ -19,7 +20,11 @@ namespace SESDADLib {
             _subject = subject;
             _content = content;
             _timestamp = date;
+            _subType = false;
         }
+
+        public string getTopic() { return _topic; }
+        public bool getSubType() { return _subType; }
 
         public override string ToString() {
             return "Publication";
