@@ -24,11 +24,13 @@ namespace Subscriber {
             _subscriptionTopics.Add(topic);
         }
 
-        public void selfRegister()
-        {
-            TcpChannel channel = new TcpChannel(1337);
+        public void selfRegister() {
+            Console.WriteLine("Subscriber registered on port: " + _port.ToString() + " with uri: " + _uriAddress);
+
+            TcpChannel channel = new TcpChannel(_port);
             ChannelServices.RegisterChannel(channel, false);
-            RemotingServices.Marshal(this, "subscriber", typeof(ISubscriber));
+
+            RemotingServices.Marshal(this, _uriAddress, typeof(ISubscriber));
         }
 
         public void addToHistory(Publication pub) {

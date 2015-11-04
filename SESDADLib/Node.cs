@@ -9,7 +9,11 @@ namespace SESDADLib {
     public abstract class Node : MarshalByRefObject {
         protected string _processName;
         protected string _processURL;
+        protected int _port;
+        protected string _uriAddress;
+
         protected string _site;
+
         protected string _puppetMasterURL;
         protected bool _enabled = true;
         protected bool _executing = false;
@@ -21,6 +25,9 @@ namespace SESDADLib {
             _site = site;
             _puppetMasterURL = puppetMasterURL;
             _nodeProcess = new Process();
+            
+            _port = int.Parse(_processURL.Split(':')[2].Split('/')[0]);
+            _uriAddress = _processURL.Split(':')[2].Split('/')[1];
         }
 
         public string getProcessName(){ return _processName; }
