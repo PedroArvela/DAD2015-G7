@@ -9,12 +9,12 @@ namespace Publisher{
     public class Publisher : Node{   
         private List<string> _siteBrokerUrl;
         private List<string> _topics;
-        private List<Publication> _pubHistory;
+        private List<Message> _pubHistory;
 
         public Publisher(string processName, string processURL, string site, string puppetMasterURL) : base(processName, processURL, site, puppetMasterURL) {
             _siteBrokerUrl = new List<string>();
             _topics = new List<string>();
-            _pubHistory = new List<Publication>();
+            _pubHistory = new List<Message>();
             
             _nodeProcess.StartInfo.FileName = "..\\..\\..\\Publisher\\bin\\Debug\\Publisher.exe";
         }
@@ -27,17 +27,18 @@ namespace Publisher{
             _topics.Add(topic);
         }
 
-        public void Publish(Publication pub) {
+        public void Publish(Message pub) {
             _pubHistory.Add(pub);
 
             TcpChannel channel = new TcpChannel();
             ChannelServices.RegisterChannel(channel, false);
             foreach(string parentNode in _siteBrokerUrl) {
-                ISubscriber sub = (ISubscriber)Activator.GetObject(typeof(ISubscriber), parentNode);
-                if(sub == null)
+                INode sub = (INode)Activator.GetObject(typeof(INode), parentNode);
+                if (sub == null)
                     System.Console.WriteLine("Could not locate parent node");
-                else
-                    sub.newPublication(pub);
+                else {
+                    // TODO: sub.newPublication(pub);
+                }
             }
         }
 
@@ -56,7 +57,7 @@ namespace Publisher{
                 print += "\t\t" + topic + "\n";
             }
             print += "\tPublication History\n";
-            foreach (Publication pub in _pubHistory) {
+            foreach (Message pub in _pubHistory) {
                 print += "\t\t" + pub.ToString() + "\n";
             }
             return print;

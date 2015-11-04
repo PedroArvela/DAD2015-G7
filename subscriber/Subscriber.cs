@@ -6,14 +6,14 @@ using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
 
 namespace Subscriber {
-    public class Subscriber : Node, ISubscriber {
+    public class Subscriber : Node, INode {
         private List<string> _subscriptionTopics;
-        private Dictionary<string, List<Publication>> _subscriptionHistory; //key -> topic | value -> history
+        private Dictionary<string, List<Message>> _subscriptionHistory; //key -> topic | value -> history
         private List<string> _siteBrokerUrl;
 
         public Subscriber(string processName, string processURL, string site, string puppetMasterURL) : base(processName, processURL, site, puppetMasterURL) {
             _subscriptionTopics = new List<string>();
-            _subscriptionHistory = new Dictionary<string, List<Publication>>();
+            _subscriptionHistory = new Dictionary<string, List<Message>>();
             _siteBrokerUrl = new List<string>();
 
             _nodeProcess.StartInfo.FileName = "..\\..\\..\\Subscriber\\bin\\Debug\\Subscriber.exe";
@@ -30,13 +30,13 @@ namespace Subscriber {
             TcpChannel channel = new TcpChannel(_port);
             ChannelServices.RegisterChannel(channel, false);
 
-            RemotingServices.Marshal(this, _uriAddress, typeof(ISubscriber));
+            RemotingServices.Marshal(this, _uriAddress, typeof(INode));
         }
 
-        public void addToHistory(Publication pub) {
-            string topic = pub._topic;
+        public void addToHistory(Message pub) {
+            string topic = pub.Topic;
             if (_subscriptionHistory[topic] == null) {
-                _subscriptionHistory.Add(topic, new List<Publication>());
+                _subscriptionHistory.Add(topic, new List<Message>());
                 _subscriptionHistory[topic].Add(pub);
             } else {
                 _subscriptionHistory[topic].Add(pub);
@@ -48,11 +48,12 @@ namespace Subscriber {
             ChannelServices.RegisterChannel(channel, false);
             foreach (string parentNode in _siteBrokerUrl)
             {
-                IBroker broker = (IBroker)Activator.GetObject(typeof(ISubscriber), parentNode);
+                INode broker = (INode)Activator.GetObject(typeof(INode), parentNode);
                 if (broker == null)
                     System.Console.WriteLine("Could not locate parent node");
-                else
-                    broker.subscribe(topic);
+                else {
+                    // TODO: broker.subscribe(topic);
+                }
             }
         }
 
@@ -61,16 +62,17 @@ namespace Subscriber {
             ChannelServices.RegisterChannel(channel, false);
             foreach (string parentNode in _siteBrokerUrl)
             {
-                IBroker broker = (IBroker)Activator.GetObject(typeof(ISubscriber), parentNode);
+                INode broker = (INode)Activator.GetObject(typeof(INode), parentNode);
                 if (broker == null)
                     System.Console.WriteLine("Could not locate parent node");
-                else
-                    broker.unsubscribe(topic);
+                else {
+                    // TODO: broker.unsubscribe(topic);
+                }
             }
         }
 
         // Callback for brokers to use to send the data
-        public void newPublication(Publication pub) {
+        public void newPublication(Message pub) {
             addToHistory(pub);
             Console.WriteLine(pub._content);
         }
@@ -96,9 +98,9 @@ namespace Subscriber {
                 print += "\t\t" + topic + "\n";
             }
             print += "\tSubscription History\n";
-            foreach (KeyValuePair<string, List<Publication>> entry in _subscriptionHistory) {
+            foreach (KeyValuePair<string, List<Message>> entry in _subscriptionHistory) {
                 print += "\t\t" + entry.Key + "\n";
-                foreach (Publication pub in entry.Value) {
+                foreach (Message pub in entry.Value) {
                     print += "\t\t\t" + pub.ToString();
                 }
             }
@@ -130,6 +132,10 @@ namespace Subscriber {
             ChannelServices.RegisterChannel(channel, false);
 
             RemotingServices.Marshal(this, uri, typeof(Subscriber));
+        }
+
+        public void addToQueue(Message msg) {
+            throw new NotImplementedException();
         }
     }
 }

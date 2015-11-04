@@ -8,9 +8,9 @@ using Subscriber;
 
 
 namespace Broker {
-    public class Broker : Node, IBroker {
+    public class Broker : Node, INode {
         private bool _routingPolicy;
-        private Queue<Publication> _queue;
+        private Queue<Message> _queue;
         private Object _queueLock = new Object();
 
         private Dictionary<string, List<string>> _subscribersTopics = new Dictionary<string, List<string>>(); //key == topic, value == #interestedURL's
@@ -23,7 +23,7 @@ namespace Broker {
 
         public Broker(string processName, string processURL, string site, string routingtype, string puppetMasterURL) : base(processName, processURL, site, puppetMasterURL) {
             _puppetMasterURL = puppetMasterURL;
-            _queue = new Queue<Publication>();
+            _queue = new Queue<Message>();
             _subscribersTopics = new Dictionary<string, List<string>>();
             switch (routingtype) {
                 case "flooding":
@@ -131,13 +131,13 @@ namespace Broker {
             }
         }
 
-        public void addToQueue(Publication p) {
+        public void addToQueue(Message p) {
             lock (_queueLock) {
                 _queue.Enqueue(p);
             }
         }
 
-        public void sendPublication(Publication pub) {
+        public void sendPublication(Message pub) {
             Broker remoteB = null;
             Subscriber.Subscriber remoteS = null;
 
@@ -151,7 +151,7 @@ namespace Broker {
                 }
             } else {
                 foreach (string interestedTopic in _subscribersTopics.Keys) {
-                    if (interestedTopic.Equals(pub.getTopic())) {
+                    if (interestedTopic.Equals(pub.Topic)) {
                         foreach (string interestedURL in _subscribersTopics[interestedTopic]) {
                             if (_subscribers.Contains(interestedURL)) {
                                 remoteS = (Subscriber.Subscriber)Activator.GetObject(typeof(Subscriber.Subscriber), interestedURL);
@@ -167,7 +167,7 @@ namespace Broker {
         }
 
         public void processQueue() {
-            Publication pub = null;
+            Message pub = null;
             if (_queue.Count > 0 && _enabled) {
                 lock (_queueLock) {
                     pub = _queue.Dequeue();
@@ -207,24 +207,6 @@ namespace Broker {
                 arguments += " -c " + child;
             }
             return arguments;
-        }
-
-        public override void executeProcess() {
-            _nodeProcess.StartInfo.Arguments = this.getArguments();
-            _nodeProcess.Start();
-            _executing = true;
-        }
-
-        public void subscribe(string topic) {
-            throw new NotImplementedException();
-        }
-
-        public void unsubscribe(string topic) {
-            throw new NotImplementedException();
-        }
-
-        public void newPublication(Publication pub) {
-            throw new NotImplementedException();
         }
     }
 }

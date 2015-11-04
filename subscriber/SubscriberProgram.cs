@@ -27,11 +27,10 @@ namespace Subscriber {
                 s.addBrokerURL(brokers[i]);
             }
             s.publishToPuppetMaster();
-            //TODO: DO STUFF WITH P
 
-            //TEST CODE
-
-            Console.ReadLine();
+            while (true) {
+                // TODO: s.processQueue();
+            }
         }
     }
 }
