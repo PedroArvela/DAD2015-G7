@@ -492,22 +492,27 @@ namespace PuppetMaster
             foreach (Broker.Broker b in _brokers) {
                 if (b.getProcessName().Equals(processName) && b.getExecuting()) {
                     connectToNode("broker", processName);
-                    _remoteBroker.addToQueue(new Message(MessageType.Publication, b.getSite(), "demoTopic", "demoContent", DateTime.Now, 0));
+                    _remoteBroker.addToQueue(new Message(MessageType.Publication, b.getSite(), topic, "demoContent", DateTime.Now, 0));
                     return;
                 }
             }
         }
 
-        public void addTopic(string targetBroker, string interestedBroker, string topic) {
+        public void addTopic(string targetBroker, string interestedNode, string topic) {
             string interestURL = null;
 
             foreach (Broker.Broker b in _brokers) {
-                if (b.getProcessName().Equals(interestedBroker)) {
+                if (b.getProcessName().Equals(interestedNode)) {
                     interestURL = b.getProcessURL();
                 }
             }
+            foreach (Subscriber.Subscriber s in _subscribers) {
+                if (s.getProcessName().Equals(interestedNode)) {
+                    interestURL = s.getProcessURL();
+                }
+            }
 
-            Console.WriteLine("Adding topic: " + topic + " to " + targetBroker + " for interested " + interestedBroker + " of URL " + interestURL);
+            Console.WriteLine("Adding topic: " + topic + " to " + targetBroker + " for interested " + interestedNode + " of URL " + interestURL);
 
             foreach (Broker.Broker b in _brokers) {
                 if (b.getProcessName().Equals(targetBroker) && b.getExecuting()) {

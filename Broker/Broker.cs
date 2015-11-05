@@ -143,6 +143,7 @@ namespace Broker {
 
             
             if (!_routingPolicy) {
+                Console.WriteLine("Sending Message in Flood Mode...");
                 foreach (string url in _childProcessesURL) {
                     //flood all available brokers
                     remoteB = (Broker)Activator.GetObject(typeof(Broker), url);
@@ -163,7 +164,9 @@ namespace Broker {
                     }
                 }
             } else {
+                Console.WriteLine("Sending message in Filter Mode...");
                 foreach (string interestedTopic in _subscribersTopics.Keys) {
+                    Console.WriteLine("testing... " + interestedTopic + " matches " + pub.Topic);
                     if (interestedTopic.Equals(pub.Topic)) {
                         foreach (string interestedURL in _subscribersTopics[interestedTopic]) {
                             if (_subscribers.Contains(interestedURL)) {

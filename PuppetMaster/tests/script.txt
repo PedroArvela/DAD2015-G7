@@ -1,4 +1,7 @@
 Import ..\..\tests\config.txt
 StartNetwork
-Status
-Wait 2000
+AddTopic gBroker bBroker test
+AddTopic bBroker mBroker test
+AddTopic mBroker mSub test
+RoutingPolicy filter
+SpawnPublication gBroker test
