@@ -7,9 +7,11 @@ using System.Runtime.Remoting.Channels.Tcp;
 
 namespace Subscriber {
     public class Subscriber : Node, INode {
+        private int sendSequence = 0;
         private List<string> _subscriptionTopics;
         private Dictionary<string, List<Message>> _subscriptionHistory; //key -> topic | value -> history
         private List<string> _siteBrokerUrl;
+        private object _queueLock = new object();
 
         public Subscriber(string processName, string processURL, string site, string puppetMasterURL) : base(processName, processURL, site, puppetMasterURL) {
             _subscriptionTopics = new List<string>();
@@ -17,7 +19,7 @@ namespace Subscriber {
             _siteBrokerUrl = new List<string>();
 
             _nodeProcess.StartInfo.FileName = "..\\..\\..\\Subscriber\\bin\\Debug\\Subscriber.exe";
-            //FIXME: selfRegister();
+            selfRegister();
         }
 
         public void addTopic(string topic) {
@@ -31,6 +33,13 @@ namespace Subscriber {
             ChannelServices.RegisterChannel(channel, false);
 
             RemotingServices.Marshal(this, _uriAddress, typeof(INode));
+        }
+
+        public void addToQueue(Message msg) {
+            Console.WriteLine(msg.Content);
+            lock (_queueLock) {
+                addToHistory(msg);
+            }
         }
 
         public void addToHistory(Message pub) {
@@ -52,7 +61,8 @@ namespace Subscriber {
                 if (broker == null)
                     System.Console.WriteLine("Could not locate parent node");
                 else {
-                    // TODO: broker.subscribe(topic);
+                    broker.addToQueue(new Message(MessageType.Subscribe, _site, topic, "", new DateTime(), sendSequence));
+                    sendSequence++;
                 }
             }
         }
@@ -66,15 +76,10 @@ namespace Subscriber {
                 if (broker == null)
                     System.Console.WriteLine("Could not locate parent node");
                 else {
-                    // TODO: broker.unsubscribe(topic);
+                    broker.addToQueue(new Message(MessageType.Unsubscribe, _site, topic, "", new DateTime(), sendSequence));
+                    sendSequence++;
                 }
             }
-        }
-
-        // Callback for brokers to use to send the data
-        public void newPublication(Message pub) {
-            addToHistory(pub);
-            Console.WriteLine(pub._content);
         }
 
         public void addBrokerURL(string url) {
@@ -132,10 +137,6 @@ namespace Subscriber {
             ChannelServices.RegisterChannel(channel, false);
 
             RemotingServices.Marshal(this, uri, typeof(Subscriber));
-        }
-
-        public void addToQueue(Message msg) {
-            throw new NotImplementedException();
         }
     }
 }

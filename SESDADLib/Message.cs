@@ -14,19 +14,19 @@ namespace SESDADLib {
     [Serializable]
     public class Message {
         public MessageType SubType { get; }
-        public string _site;
+        public string Site { get; }
         public string Topic { get; }
-        public string _subject;
-        public string _content;
-        public DateTime _timestamp;
+        public string Content { get; }
+        public DateTime Timestamp { get; }
+        public int Sequence { get; }
 
-        public Message(MessageType subType, string site, string topic, string subject, string content, DateTime date) {
+        public Message(MessageType subType, string site, string topic, string content, DateTime date, int sequence) {
             this.SubType = subType;
-            this._site = site;
+            this.Site = site;
             this.Topic = topic;
-            this._subject = subject;
-            this._content = content;
-            this._timestamp = date;
+            this.Content = content;
+            this.Timestamp = date;
+            this.Sequence = sequence;
         }
     }
 }
