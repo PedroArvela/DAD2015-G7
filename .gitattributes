@@ -1,0 +1,4 @@
+*.cs text
+*.config text
+*.csproj text
+*.sln text eol=crlf
