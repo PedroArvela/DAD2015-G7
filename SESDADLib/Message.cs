@@ -28,5 +28,10 @@ namespace SESDADLib {
             this.Timestamp = date;
             this.Sequence = sequence;
         }
+
+        public override string ToString() {
+            string textOutput = "[ " + Timestamp.ToString("dd/MM/yyyy - HH:mm:ss") + " | "+ Sequence + " ] - " +  SubType.ToString() + " of content \"" + Content + "\" with topic " + Topic;
+            return textOutput;
+        }
     }
 }

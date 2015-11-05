@@ -43,7 +43,10 @@ namespace Subscriber {
 
         public void addToHistory(Message pub) {
             string topic = pub.Topic;
-            if (_subscriptionHistory[topic] == null) {
+            List<Message> messages = null;
+
+            _subscriptionHistory.TryGetValue(topic, out messages);
+            if (messages == null) {
                 _subscriptionHistory.Add(topic, new List<Message>());
                 _subscriptionHistory[topic].Add(pub);
             } else {
