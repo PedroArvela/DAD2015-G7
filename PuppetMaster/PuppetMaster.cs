@@ -191,7 +191,8 @@ namespace PuppetMaster
             String startProcess = "^Start\\s(broker|subscriber|publisher)\\s[A-Za-z0-9]+$";
             String showPatern = "^Show$";
             String showNodePatern = "^ShowNode\\s(broker|subscriber|publisher)\\s[A-Za-z0-9]+$";
-            String SpawnPublicationPatern = "^SpawnPublication\\s[A-Za-z0-9]+$";
+            String SpawnPublicationPatern = "^SpawnPublication\\s[A-Za-z0-9]+\\s[A-Za-z0-9/]+$";
+            String addTopicPatern = "^AddTopic\\s[A-Za-z0-9]+\\s[A-Za-z0-9]+\\s[A-Za-z0-9/]+$";
             String quitPatern = "^Quit|Exit$";
 
             List<Regex> regs = new List<Regex>();
@@ -219,6 +220,7 @@ namespace PuppetMaster
             regs.Add(new Regex(startNetwork, RegexOptions.None));
             regs.Add(new Regex(startProcess, RegexOptions.None));
             regs.Add(new Regex(SpawnPublicationPatern, RegexOptions.None));
+            regs.Add(new Regex(addTopicPatern, RegexOptions.None));
             regs.Add(new Regex(quitPatern, RegexOptions.None));
 
             foreach (Regex r in regs) {
@@ -296,7 +298,10 @@ namespace PuppetMaster
                         this.startProcess(parsed[1], parsed[2]);
                         break;
                     case "SpawnPublication":
-                        this.spawnPublication(parsed[1]);
+                        this.spawnPublication(parsed[1], parsed[2]);
+                        break;
+                    case "AddTopic":
+                        this.addTopic(parsed[1], parsed[2], parsed[3]);
                         break;
                     case "Exit":
                         wipeNetwork();
@@ -414,6 +419,9 @@ namespace PuppetMaster
                         }
                         _subscribers.Add(s);
                         targetSite.addSubscriber(s);
+                        foreach (Broker.Broker broker in targetSite.getBrokers()) {
+                            broker.addSubscriberUrl(Url);
+                        }
                         writeToLog("Subscriber " + processName + " created on " + Site + " with process URL " + Url);
                         break;
                 }
@@ -480,12 +488,32 @@ namespace PuppetMaster
             }
         }
 
-        public void spawnPublication(string processName) {
+        public void spawnPublication(string processName, string topic) {
             foreach (Broker.Broker b in _brokers) {
                 if (b.getProcessName().Equals(processName) && b.getExecuting()) {
                     connectToNode("broker", processName);
                     _remoteBroker.addToQueue(new Message(MessageType.Publication, b.getSite(), "demoTopic", "demoContent", new DateTime(), 0));
                     return;
+                }
+            }
+        }
+
+        public void addTopic(string targetBroker, string interestedBroker, string topic) {
+            string interestURL = null;
+
+            foreach (Broker.Broker b in _brokers) {
+                if (b.getProcessName().Equals(interestedBroker)) {
+                    interestURL = b.getProcessURL();
+                }
+            }
+
+            Console.WriteLine("Adding topic: " + topic + " to " + targetBroker + " for interested " + interestedBroker + " of URL " + interestURL);
+
+            foreach (Broker.Broker b in _brokers) {
+                if (b.getProcessName().Equals(targetBroker) && b.getExecuting()) {
+                    this.connectToNode("broker", targetBroker);
+                    _remoteBroker.addTopic(topic, interestURL);
+                    Console.WriteLine("Manualy added topic to: " + _remoteBroker.getProcessName());
                 }
             }
         }

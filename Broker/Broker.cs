@@ -40,6 +40,11 @@ namespace Broker {
 
         public List<string> getParentURL() { return _parentProcessesURL; }
         public List<string> getChildURL() { return _childProcessesURL; }
+        public List<string> getSubURL() { return _subscribers; }
+
+        public void addSubscriberUrl(string url) {
+            _subscribers.Add(url);
+        }
 
         public void addChildUrl(string url) {
             _childProcessesURL.Add(url);
@@ -99,34 +104,29 @@ namespace Broker {
             }
         }
 
-        private void addTopic(string topic, string interestedURL) {
+        public void addTopic(string topic, string interestedURL) {
             List<string> interest = null;
             bool found = false;
 
             Console.WriteLine("Adding to interest List...");
-            if (_subscribersTopics[topic] == null) {
+            _subscribersTopics.TryGetValue(topic, out interest);
+            if (interest == null ) {
+                Console.WriteLine("New topic " + interestedURL + " added with interested url " + interestedURL);
                 interest = new List<string>();
                 interest.Add(interestedURL);
                 _subscribersTopics.Add(topic, interest);
-                if (!_childProcessesURL.Contains(interestedURL) && !_parentProcessesURL.Contains(interestedURL)) {
-                    _subscribers.Add(interestedURL);
-                }
-                Console.WriteLine("New topic " + interestedURL + " added with interested url " + interestedURL);
             } else {
                 interest = _subscribersTopics[topic];
                 foreach (string url in interest) {
                     if (interestedURL.Equals(url)) {
-                        found = true;
                         Console.WriteLine("URL already on interest list");
+                        found = true;
                         break;
                     }
                 }
                 if (!found) {
                     Console.WriteLine("URL: " + interestedURL + " added to topic " + topic);
                     interest.Add(interestedURL);
-                    if (!_childProcessesURL.Contains(interestedURL) && !_parentProcessesURL.Contains(interestedURL)) {
-                        _subscribers.Add(interestedURL);
-                    }
                 }
             }
         }
@@ -147,7 +147,20 @@ namespace Broker {
                     //flood all available brokers
                     remoteB = (Broker)Activator.GetObject(typeof(Broker), url);
                     remoteB.addToQueue(pub);
-                    Console.WriteLine("Publication sent to: " + url);
+                    Console.WriteLine("Publication sent to lower level broker: " + url);
+                }
+                foreach (string url in _subscribers) {
+                    remoteS = (Subscriber.Subscriber)Activator.GetObject(typeof(Subscriber.Subscriber), url);
+                    remoteS.addToHistory(pub);
+                    Console.WriteLine("Publication sent to subscriber: " + url);
+                }
+                //TODO: if publication is actualy a subscription or unsubscription request, pass to parentBrokers
+                if (false) {
+                    foreach (string url in _parentProcessesURL) {
+                        remoteB = (Broker)Activator.GetObject(typeof(Broker), url);
+                        remoteB.addToQueue(pub);
+                        Console.WriteLine("Publication sent to higher level broker: " + url);
+                    }
                 }
             } else {
                 foreach (string interestedTopic in _subscribersTopics.Keys) {
@@ -161,6 +174,7 @@ namespace Broker {
                                 remoteB.addToQueue(pub);
                             }
                         }
+                        break;
                     }
                 }        
             }
@@ -197,7 +211,7 @@ namespace Broker {
         }
 
         protected override string getArguments() {
-            //processName processURL site routingtype puppetMasterURL -p parentURL -c childURL
+            //processName processURL site routingtype puppetMasterURL -p parentURL -c childURL -s subURL
             string arguments = _processName + " " + _processURL + " " + _site + " " + _routingPolicy + " " + _puppetMasterURL + " ";
 
             foreach (string parent in _parentProcessesURL) {
@@ -206,7 +220,16 @@ namespace Broker {
             foreach (string child in _childProcessesURL) {
                 arguments += " -c " + child;
             }
+            foreach (string sub in _subscribers) {
+                arguments += " -s " + sub;
+            }
             return arguments;
+        }
+
+        public override void executeProcess() {
+            _nodeProcess.StartInfo.Arguments = this.getArguments();
+            _nodeProcess.Start();
+            _executing = true;
         }
     }
 }

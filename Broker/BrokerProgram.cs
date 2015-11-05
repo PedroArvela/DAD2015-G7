@@ -18,6 +18,7 @@ namespace Broker {
 
             List<string> childList = new List<string>();
             List<string> parentList = new List<string>();
+            List<string> subList = new List<string>();
 
             for (int i = 5; i < args.Length; i+=2) {
                 switch (args[i]) {
@@ -26,6 +27,9 @@ namespace Broker {
                         break;
                     case "-c":
                         childList.Add(args[i + 1]);
+                        break;
+                    case "-s":
+                        subList.Add(args[i + 1]);
                         break;
                 }
             }
@@ -37,6 +41,9 @@ namespace Broker {
             }
             foreach (string p in parentList) {
                 b.addParentUrl(p);
+            }
+            foreach (string s in subList) {
+                b.addSubscriberUrl(s);
             }
             b.publishToPuppetMaster();
 

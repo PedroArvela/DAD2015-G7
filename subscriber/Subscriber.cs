@@ -19,7 +19,6 @@ namespace Subscriber {
             _siteBrokerUrl = new List<string>();
 
             _nodeProcess.StartInfo.FileName = "..\\..\\..\\Subscriber\\bin\\Debug\\Subscriber.exe";
-            selfRegister();
         }
 
         public void addTopic(string topic) {
