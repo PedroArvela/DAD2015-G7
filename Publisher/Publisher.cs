@@ -32,6 +32,7 @@ namespace Publisher{
         public void Publish(string topic) {
             INode target = null;
             Message pub = new Message(MessageType.Publication, _site, topic, "publication", DateTime.Now, _sendSequence);
+            this._pubHistory.Add(pub);
             pub.originURL = _processURL;
 
             foreach(string url in _siteBrokerUrl) {
