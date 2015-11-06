@@ -6,6 +6,14 @@
 * `ist170958` - José Gonçalo Simões Rodrigues
 * `ist173557` - José Pedro de Almeida Arvela
 
+## Running test script
+
+All test scripts and network configurations are located in PuppetMaster\tests
+
+To run the script from the application simply type:
+
+"RunScript ..\..\tests\script.txt"
+
 ## Formatting
 
 To maintain code coherence please verify the following settings on Visual Studio
