@@ -3,7 +3,8 @@ StartNetwork
 AddTopic gBroker bBroker test
 AddTopic bBroker mBroker test
 AddTopic mBroker mSub test
-Subscriber mSub Subscribe test
 RoutingPolicy filter
-SpawnPublication gBroker test
+Ordering FIFO
+Subscriber mSub Subscribe test
+Wait 10000
 Publisher yPub Publish 1 OnTopic test Interval 100

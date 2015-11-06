@@ -54,7 +54,7 @@ namespace Subscriber {
         public void addToHistory(Message pub) {
             string topic = pub.Topic;
 
-            Console.WriteLine("New unordered message on topic" + pub.Topic + " from " + pub.originURL + " sequence " + pub.Sequence);
+            Console.WriteLine("New unordered message on topic " + pub.Topic + " from " + pub.originURL + " sequence " + pub.Sequence);
             _queueMessages.Enqueue(pub);
         }
 
@@ -67,29 +67,30 @@ namespace Subscriber {
                 pub = _queueMessages.Dequeue();
             }
 
-            // No ordering
-            if (_ordering == "NO") {
-                _messageHistory.Add(pub);
-                return;
-            }
-
-            // FIFO ordering
+            // TODO: Move this to addBrokerURL
             string origin = pub.originURL;
             int seq = pub.Sequence;
 
-            Console.WriteLine("Processing message on topic" + pub.Topic + " from " + pub.originURL + " sequence " + pub.Sequence);
-
             Dictionary<int, Message> messages = null;
-
-            // TODO: Move this to addBrokerURL
             _undeliveredList.TryGetValue(origin, out messages);
             if (messages == null) {
                 _undeliveredList.Add(origin, new Dictionary<int, Message>());
             }
-            
+
             if (!_lastDelivered.ContainsKey(origin)) {
                 _lastDelivered.Add(origin, -1);
             }
+
+            // No ordering
+            if (_ordering == "NO") {
+                Console.WriteLine("Delivering message on topic " + pub.Topic + " from " + pub.originURL + " sequence " + pub.Sequence);
+                _messageHistory.Add(pub);
+                _lastDelivered[pub.originURL] = pub.Sequence;
+                return;
+            }
+
+            // FIFO ordering
+            Console.WriteLine("Processing message on topic " + pub.Topic + " from " + pub.originURL + " sequence " + pub.Sequence);
 
             Console.WriteLine("Sequence: " + seq + "\tLast: " + _lastDelivered[origin]);
             if (_lastDelivered[origin] == seq - 1) {
