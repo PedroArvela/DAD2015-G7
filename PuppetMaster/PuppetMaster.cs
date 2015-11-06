@@ -105,10 +105,10 @@ namespace PuppetMaster
             element parent;
             if (parentSite.Equals("none") && networkTree == null) {
                 networkTree = new element(site, null);
-                writeToLog(site + " is root Root site");
+                //writeToLog(site + " is root Root site");
             } else if ((parent = this.findElement(networkTree, parentSite)) != null) {
                 parent.addChild(new element(site, parent));
-                writeToLog(site + " created - parent site: " + parentSite);
+                //writeToLog(site + " created - parent site: " + parentSite);
             }
         }
         
@@ -261,9 +261,11 @@ namespace PuppetMaster
                         } else {
                             this.UnSubscribe(parsed[1], parsed[3]);
                         }
+                        this.writeToLog(command);
                         break;
                     case "Publisher":
                         this.Publish(parsed[1], Int32.Parse(parsed[3]), parsed[5], Int32.Parse(parsed[7]));
+                        this.writeToLog(command);
                         break;
                     case "Status":
                         this.Status();
@@ -273,15 +275,19 @@ namespace PuppetMaster
                         break;
                     case "Crash":
                         this.crash(parsed[1]);
+                        this.writeToLog(command);
                         break;
                     case "Freeze":
                         this.freeze(parsed[1]);
+                        this.writeToLog(command);
                         break;
                     case "Unfreeze":
                         this.unFreeze(parsed[1]);
+                        this.writeToLog(command);
                         break;
                     case "Wait":
                         this.wait(Int32.Parse(parsed[1]));
+                        this.writeToLog(command);
                         break;
                     case "LogginLevel":
                         this.changeLoggingLevel(parsed[1]);
@@ -412,7 +418,7 @@ namespace PuppetMaster
                         Console.WriteLine(b.getProcessName());
                         _brokers.Add(b);
                         targetSite.addBroker(b);
-                        writeToLog("Broker " + processName + " created on " + Site + " with process URL " + Url);
+                        //writeToLog("Broker " + processName + " created on " + Site + " with process URL " + Url);
                         break;
                     case "publisher":
                         p = new Publisher.Publisher(processName, Url, Site, this._masterURL);
@@ -421,7 +427,7 @@ namespace PuppetMaster
                         }
                         _publishers.Add(p);
                         targetSite.addPublisher(p);
-                        writeToLog("Publisher " + processName + " created on " + Site + " with process URL " + Url);
+                        //writeToLog("Publisher " + processName + " created on " + Site + " with process URL " + Url);
                         break;
                     case "subscriber":
                         brokerUrl = targetSite.getBrokerUrls().ElementAt(0);
@@ -434,7 +440,7 @@ namespace PuppetMaster
                         foreach (Broker.Broker broker in targetSite.getBrokers()) {
                             broker.addSubscriberUrl(Url);
                         }
-                        writeToLog("Subscriber " + processName + " created on " + Site + " with process URL " + Url);
+                        //writeToLog("Subscriber " + processName + " created on " + Site + " with process URL " + Url);
                         break;
                 }
             }
@@ -496,10 +502,10 @@ namespace PuppetMaster
 
             if (found) {
                 target.executeProcess();
-                writeToLog("Process " + name + " started");
+                //writeToLog("Process " + name + " started");
                 Console.WriteLine("Process " + name + " started");
             } else {
-                writeToLog("Process " + name + " cannot be started - Non-Existant");
+                //writeToLog("Process " + name + " cannot be started - Non-Existant");
                 Console.WriteLine("Process " + name + " cannot be started - Non-Existant");
             }
         }
@@ -508,7 +514,7 @@ namespace PuppetMaster
             foreach (Broker.Broker b in _brokers) {
                 if (b.getProcessName().Equals(processName) && b.getExecuting()) {
                     connectToNode("broker", processName);
-                    Message msg = new Message(MessageType.Publication, b.getSite(), topic, "demoContent", DateTime.Now, sequenceNumber);
+                    Message msg = new Message(MessageType.Publication, b.getSite(), topic, "demoContent", DateTime.Now, sequenceNumber, "puppetMaster");
                     msg.originURL = b.getProcessURL();
                     _remoteBroker.addToQueue(msg);
                     return;

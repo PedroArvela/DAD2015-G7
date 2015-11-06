@@ -124,7 +124,7 @@ namespace Subscriber {
                     Console.WriteLine("Topic already Subscribed to...");
                 } else {
                     Console.WriteLine("Sending subscription request to: " + brokerURL);
-                    request = new Message(MessageType.Subscribe, _site, topic, "subscribe", DateTime.Now, sendSequence);
+                    request = new Message(MessageType.Subscribe, _site, topic, "subscribe", DateTime.Now, sendSequence, _processName);
                     request.originURL = _processURL;
                     broker.addToQueue(request);
                     _subscriptionTopics.Add(topic);
@@ -146,7 +146,7 @@ namespace Subscriber {
                     Console.WriteLine("Non-existant Topic...");
                 } else {
                     Console.WriteLine("Sending unsubscription request to: " + brokerURL);
-                    request = new Message(MessageType.Unsubscribe, _site, topic, "unsubscribe", DateTime.Now, sendSequence);
+                    request = new Message(MessageType.Unsubscribe, _site, topic, "unsubscribe", DateTime.Now, sendSequence, _processName);
                     request.originURL = _processURL;
                     broker.addToQueue(request);
                     _subscriptionTopics.Remove(topic);

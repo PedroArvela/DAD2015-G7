@@ -31,7 +31,7 @@ namespace Publisher{
 
         public void Publish(string topic) {
             INode target = null;
-            Message pub = new Message(MessageType.Publication, _site, topic, "publication", DateTime.Now, _sendSequence);
+            Message pub = new Message(MessageType.Publication, _site, topic, "publication", DateTime.Now, _sendSequence, _processName);
             this._pubHistory.Add(pub);
             pub.originURL = _processURL;
             _sendSequence++;
@@ -42,6 +42,7 @@ namespace Publisher{
                     System.Console.WriteLine("Failed to connect to " + url);
                 else {
                     target.addToQueue(pub);
+                    this.writeToLog("PubEvent" + _processName + ", " + _processURL + ", " + topic + ", " + _sendSequence);
                 }
             }
         }

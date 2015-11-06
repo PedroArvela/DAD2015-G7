@@ -18,16 +18,18 @@ namespace SESDADLib {
         public string Site { get; }
         public string Topic { get; }
         public string Content { get; }
+        public string Publisher { get; }
         public DateTime Timestamp { get; }
         public int Sequence { get; }
 
-        public Message(MessageType subType, string site, string topic, string content, DateTime date, int sequence) {
+        public Message(MessageType subType, string site, string topic, string content, DateTime date, int sequence, string publisher) {
             this.SubType = subType;
             this.Site = site;
             this.Topic = topic;
             this.Content = content;
             this.Timestamp = date;
             this.Sequence = sequence;
+            this.Publisher = publisher;
         }
 
         public override string ToString() {

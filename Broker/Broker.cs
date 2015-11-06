@@ -171,6 +171,8 @@ namespace Broker {
                 foreach (string url in targetURL) {
                     target = (INode)Activator.GetObject(typeof(INode), url);
                     target.addToQueue(pub);
+                    if (_loggingLevel.Equals("full"))
+                        this.writeToLog("BroEvent " + _processName + ", " + pub.Publisher + ", " + pub.Topic + ", " + pub.Sequence);
                     Console.WriteLine("Publication sent to: " + url);
                 }
 
@@ -187,6 +189,8 @@ namespace Broker {
                                 target = (INode)Activator.GetObject(typeof(INode), interestedURL);
                                 target.addToQueue(pub);
                             }
+                            if(_loggingLevel.Equals("full"))
+                                this.writeToLog("BroEvent " + _processName + ", " + pub.Publisher + ", " + pub.Topic + ", " + pub.Sequence);
                         }
                         break;
                     }
