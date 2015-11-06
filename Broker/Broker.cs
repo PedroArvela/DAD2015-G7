@@ -213,7 +213,12 @@ namespace Broker {
                     topicURL.Add(origin);
                     _subscribersTopics.Add(topic, topicURL);
                 } else {
-                    _subscribersTopics[topic].Add(origin);
+                    if (!_subscribersTopics[topic].Contains(origin)) {
+                        _subscribersTopics[topic].Add(origin);
+                    } else {
+                        Console.WriteLine(origin + " is already flaged as interested on " + topic);
+                        return;
+                    }
                 }
             }
             else if (request.SubType.Equals(MessageType.Unsubscribe)) {
