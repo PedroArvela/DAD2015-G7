@@ -7,6 +7,7 @@ using System.Runtime.Remoting.Channels.Tcp;
 
 namespace Subscriber {
     public class Subscriber : Node, INode {
+        private int eventNumber = 0;
         private int sendSequence = 0;
         private string _ordering;
         private List<string> _subscriptionTopics;
@@ -84,8 +85,11 @@ namespace Subscriber {
             // No ordering
             if (_ordering == "NO") {
                 Console.WriteLine("Delivering message on topic " + pub.Topic + " from " + pub.originURL + " sequence " + pub.Sequence);
+                writeToLog("SubEvent " + _processName + ", " + pub.Publisher + ", " + pub.Topic + ", " + eventNumber);
+                eventNumber++;
+
                 _messageHistory.Add(pub);
-                _lastDelivered[pub.originURL] = pub.Sequence;
+                _lastDelivered[origin] = pub.Sequence;
                 return;
             }
 
@@ -95,6 +99,9 @@ namespace Subscriber {
             Console.WriteLine("Sequence: " + seq + "\tLast: " + _lastDelivered[origin]);
             if (_lastDelivered[origin] == seq - 1) {
                 Console.WriteLine("Delivering message on topic" + pub.Topic + " from " + pub.originURL + " sequence " + pub.Sequence);
+                writeToLog("SubEvent " + _processName + ", " + pub.Publisher + ", " + pub.Topic + ", " + eventNumber);
+                eventNumber++;
+
                 _messageHistory.Add(pub);
                 _lastDelivered[origin] = seq;
 
