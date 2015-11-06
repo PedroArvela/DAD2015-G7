@@ -27,7 +27,7 @@ namespace PuppetMaster
 
         private bool loggingLevel = false;
         private String logFile = ".\\Logfile.txt";
-        private String orderLevel = "NO";
+        private String _ordering = "NO";
         private String _masterURL = "";
         private StreamWriter logFilePipe;
 
@@ -246,7 +246,7 @@ namespace PuppetMaster
                         this.changeRoutingLevel(parsed[1]);
                         break;
                     case "Ordering":
-                        orderLevel = parsed[1];
+                        this.changeOrderLevel(parsed[1]);
                         break;
                     case "Subscriber":
                         if (parsed[2].Equals("Subscribe")) {
@@ -413,7 +413,7 @@ namespace PuppetMaster
                         break;
                     case "subscriber":
                         brokerUrl = targetSite.getBrokerUrls().ElementAt(0);
-                        s = new Subscriber.Subscriber(processName, Url, Site, this._masterURL);
+                        s = new Subscriber.Subscriber(processName, Url, Site, this._masterURL, _ordering);
                         foreach (Broker.Broker pb in targetSite.getBrokers()) {
                             s.addBrokerURL(pb.getProcessURL());
                         }
@@ -534,8 +534,20 @@ namespace PuppetMaster
                     this.connectToNode("broker", b.getProcessName());
                     _remoteBroker.setRoutingPolicy(policy);
                 }
+                b.setRoutingPolicy(policy);
             }
 
+        }
+
+        public void changeOrderLevel(string ordering) {
+            _ordering = ordering;
+            foreach (Subscriber.Subscriber s in _subscribers) {
+                if (s.getExecuting()) {
+                    this.connectToNode("subscriber", s.getProcessName());
+                    _remoteSub.setOrdering(ordering);
+                }
+                s.setOrdering(ordering);
+            }
         }
 
         public void Subscribe(String processName, String topicName) {

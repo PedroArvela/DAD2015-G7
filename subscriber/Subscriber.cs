@@ -8,18 +8,22 @@ using System.Runtime.Remoting.Channels.Tcp;
 namespace Subscriber {
     public class Subscriber : Node, INode {
         private int sendSequence = 0;
+        private string _ordering;
         private List<string> _subscriptionTopics;
         private Dictionary<string, List<Message>> _subscriptionHistory; //key -> topic | value -> history
         private List<string> _siteBrokerUrl;
         private object _queueLock = new object();
 
-        public Subscriber(string processName, string processURL, string site, string puppetMasterURL) : base(processName, processURL, site, puppetMasterURL) {
+        public Subscriber(string processName, string processURL, string site, string puppetMasterURL, string ordering) : base(processName, processURL, site, puppetMasterURL) {
             _subscriptionTopics = new List<string>();
             _subscriptionHistory = new Dictionary<string, List<Message>>();
             _siteBrokerUrl = new List<string>();
+            _ordering = ordering;
 
             _nodeProcess.StartInfo.FileName = "..\\..\\..\\Subscriber\\bin\\Debug\\Subscriber.exe";
         }
+
+        public void setOrdering(String order) { _ordering = order; }
 
         public void addTopic(string topic) {
             _subscriptionTopics.Add(topic);
@@ -108,6 +112,7 @@ namespace Subscriber {
 
         public override string showNode() {
             String print = "Subscriber: " + _processName + " for " + _site + " active on " + _processURL + "\n";
+            print += "Ordering: " + _ordering + "\n";
             print += "\tConnected on broker:\n";
             foreach (string broker in _siteBrokerUrl) {
                 print += "\t\t";
@@ -129,8 +134,8 @@ namespace Subscriber {
         }
 
         protected override string getArguments() {
-            //processNAme processURL site puppetMAsterURL -b brokerURL
-            string text = _processName + " " + _processURL + " " + _site + " " + _puppetMasterURL;
+            //processNAme processURL site puppetMAsterURL ordering -b brokerURL
+            string text = _processName + " " + _processURL + " " + _site + " " + _puppetMasterURL + " " + _ordering;
             foreach(string broker in _siteBrokerUrl) {
                 text += " -b " + broker;
             }
