@@ -66,6 +66,11 @@ namespace Broker {
 
         public override string showNode() {
             string print = "\tBroker: " + _processName + " for " + _site + " active on " + _processURL + "\n";
+            if (_routingPolicy) {
+                print += "\tRouting Policy: filter\n";
+            } else {
+                print += "\tRouting Policy: flooding\n";
+            }
             print += "\tParent Broker URL(s):\n";
             foreach (string purl in _parentProcessesURL) {
                 print += "\t\t" + purl + "\n";
@@ -266,7 +271,12 @@ namespace Broker {
 
         protected override string getArguments() {
             //processName processURL site routingtype puppetMasterURL -p parentURL -c childURL -s subURL
-            string arguments = _processName + " " + _processURL + " " + _site + " " + _routingPolicy + " " + _puppetMasterURL + " ";
+            string arguments = _processName + " " + _processURL + " " + _site + " ";
+            if (_routingPolicy) {
+                arguments += "filter" + " " + _puppetMasterURL + " ";
+            } else {
+                arguments += "flooding" + " " + _puppetMasterURL + " ";
+            }
 
             foreach (string parent in _parentProcessesURL) {
                 arguments += " -p " + parent;

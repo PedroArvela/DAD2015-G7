@@ -26,6 +26,7 @@ namespace PuppetMaster
         private Subscriber.Subscriber _remoteSub = null;
 
         private bool loggingLevel = false;
+        private bool _routingPolicy = false;
         private String logFile = ".\\Logfile.txt";
         private String _ordering = "NO";
         private String _masterURL = "";
@@ -388,7 +389,11 @@ namespace PuppetMaster
             } else {
                 switch (type) {
                     case "broker":
-                        b = new Broker.Broker(processName, Url, Site, "flooding", this._masterURL);
+                        if (_routingPolicy) {
+                            b = new Broker.Broker(processName, Url, Site, "filter", this._masterURL);
+                        } else {
+                            b = new Broker.Broker(processName, Url, Site, "flooding", this._masterURL);
+                        }
                         if (targetSite.getParent() != null) {
                             foreach(string url in targetSite.getParent().getBrokerUrls()) {
                                 b.addParentUrl(url);
@@ -526,8 +531,10 @@ namespace PuppetMaster
         public void changeRoutingLevel(string level) {
             bool policy = true;
             if (level.Equals("flooding")) {
-                policy = false;
+                policy = false; 
             }
+
+            _routingPolicy = policy;
 
             foreach (Broker.Broker b in _brokers) {
                 if (b.getExecuting()) {
