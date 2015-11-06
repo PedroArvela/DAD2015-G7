@@ -189,7 +189,7 @@ namespace Subscriber {
             }
             print += "\tSubscription History\n";
             foreach (Message pub in _messageHistory) {
-                print += "\t\t\t" + pub.ToString();
+                print += "\t\t\t" + pub.ToString() + "\n";
             }
             return print;
         }
