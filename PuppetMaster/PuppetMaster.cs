@@ -497,7 +497,9 @@ namespace PuppetMaster
             foreach (Broker.Broker b in _brokers) {
                 if (b.getProcessName().Equals(processName) && b.getExecuting()) {
                     connectToNode("broker", processName);
-                    _remoteBroker.addToQueue(new Message(MessageType.Publication, b.getSite(), topic, "demoContent", DateTime.Now, sequenceNumber));
+                    Message msg = new Message(MessageType.Publication, b.getSite(), topic, "demoContent", DateTime.Now, sequenceNumber);
+                    msg.originURL = b.getProcessURL();
+                    _remoteBroker.addToQueue(msg);
                     return;
                 }
             }

@@ -54,17 +54,23 @@ namespace Subscriber {
         public void addToHistory(Message pub) {
             string topic = pub.Topic;
 
+            Console.WriteLine("New unordered message on topic" + pub.Topic + " from " + pub.originURL + " sequence " + pub.Sequence);
             _queueMessages.Enqueue(pub);
         }
 
         public void processQueue() {
             Message pub;
             lock (_queueLock) {
+                if (_queueMessages.Count == 0)
+                    return;
+
                 pub = _queueMessages.Dequeue();
             }
 
             string origin = pub.originURL;
             int seq = pub.Sequence;
+
+            Console.WriteLine("Processing message on topic" + pub.Topic + " from " + pub.originURL + " sequence " + pub.Sequence);
 
             Dictionary<int, Message> messages = null;
 
@@ -73,17 +79,16 @@ namespace Subscriber {
             if (messages == null) {
                 _undeliveredList.Add(origin, new Dictionary<int, Message>());
             }
+            
+            if (!_lastDelivered.ContainsKey(origin)) {
+                _lastDelivered.Add(origin, -1);
+            }
 
-            int lastDelivered = -1;
-            _lastDelivered.TryGetValue(origin, out lastDelivered);
-            if (lastDelivered == seq - 1) {
+            Console.WriteLine("Sequence: " + seq + "\tLast: " + _lastDelivered[origin]);
+            if (_lastDelivered[origin] == seq - 1) {
+                Console.WriteLine("Delivering message on topic" + pub.Topic + " from " + pub.originURL + " sequence " + pub.Sequence);
                 _messageHistory.Add(pub);
-
-                if (!_lastDelivered.ContainsKey(origin)) {
-                    _lastDelivered.Add(origin, seq);
-                } else {
-                    _lastDelivered[origin] = seq;
-                }
+                _lastDelivered[origin] = seq;
 
                 while (_undeliveredList[origin].ContainsKey(_lastDelivered[origin] + 1)) {
                     pub = _undeliveredList[origin][_lastDelivered[origin] + 1];
@@ -93,7 +98,7 @@ namespace Subscriber {
 
                     _lastDelivered[origin] += 1;
                 }
-            } else {
+            } else if (_lastDelivered[origin] > seq) {
                 _undeliveredList[origin].Add(pub.Sequence, pub);
             }
         }
@@ -163,13 +168,10 @@ namespace Subscriber {
             foreach (string topic in _subscriptionTopics) {
                 print += "\t\t" + topic + "\n";
             }
-            //print += "\tSubscription History\n";
-            //foreach (KeyValuePair<string, List<Message>> entry in _undeliveredList) {
-            //    print += "\t\t" + entry.Key + "\n";
-            //    foreach (Message pub in entry.Value) {
-            //       print += "\t\t\t" + pub.ToString();
-            //    }
-            //}
+            print += "\tSubscription History\n";
+            foreach (Message pub in _messageHistory) {
+                print += "\t\t\t" + pub.ToString();
+            }
             return print;
         }
 
@@ -192,7 +194,7 @@ namespace Subscriber {
             int port = Int32.Parse(_processURL.Split(':')[2].Split('/')[0]);
             string uri = _processURL.Split(':')[2].Split('/')[1];
 
-            Console.WriteLine("Publishing on port: " + port.ToString() + " with uri: " + uri);
+            Console.WriteLine("\t\tPublishing on port: " + port.ToString() + " with uri: " + uri + "\n");
 
             TcpChannel channel = new TcpChannel(port);
             ChannelServices.RegisterChannel(channel, false);
