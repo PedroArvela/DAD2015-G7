@@ -194,6 +194,48 @@ namespace Broker {
             }
         }
 
+        public bool compatibleTopics(string topic, string test) {
+            string[] masterTopic = topic.Split('/');
+            string[] testTopic = test.Split('/');
+            int masterTopicSize = masterTopic.Length;
+            int testTopicSize = testTopic.Length;
+
+            if (masterTopic[0].Equals("*")) {
+                return true;
+            } else {
+                if (masterTopicSize > testTopicSize) {
+                    for (int i = 0; i < testTopicSize; i++) {
+                        if (!masterTopic[i].Equals(testTopic[i])) {
+                            if (masterTopic[i].Equals("*") || testTopic[0].Equals("*")) {
+                                return true;
+                            }
+                            return false;
+                        }
+                    }
+                } else if (masterTopicSize < testTopicSize) {
+                    for (int i = 0; i < testTopicSize; i++) {
+                        if (!masterTopic[i].Equals(testTopic[i])) {
+                            if (masterTopic[i].Equals("*") || testTopic[0].Equals("*")) {
+                                return true;
+                            }
+                            return false;
+                        }
+                    }
+                } else if (masterTopicSize == testTopicSize) {
+                    for (int i = 0; i < testTopicSize; i++) {
+                        if (!masterTopic[i].Equals(testTopic[i])) {
+                            if (masterTopic[i].Equals("*") || testTopic[0].Equals("*")) {
+                                return true;
+                            }
+                            return false;
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+
         private void shareSubRequest(string topic, string origin, Message request) {
             List<string> shareList = new List<string>();
             List<string> topicURL = null;
