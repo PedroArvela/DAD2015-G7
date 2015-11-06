@@ -10,12 +10,14 @@ namespace Publisher{
         private List<string> _siteBrokerUrl;
         private List<string> _topics;
         private List<Message> _pubHistory;
+        private int _sendSequence;
 
         public Publisher(string processName, string processURL, string site, string puppetMasterURL) : base(processName, processURL, site, puppetMasterURL) {
             _siteBrokerUrl = new List<string>();
             _topics = new List<string>();
             _pubHistory = new List<Message>();
-            
+            _sendSequence = 0;
+
             _nodeProcess.StartInfo.FileName = "..\\..\\..\\Publisher\\bin\\Debug\\Publisher.exe";
         }
 
@@ -27,17 +29,17 @@ namespace Publisher{
             _topics.Add(topic);
         }
 
-        public void Publish(Message pub) {
-            _pubHistory.Add(pub);
+        public void Publish(string topic) {
+            INode target = null;
+            Message pub = new Message(MessageType.Publication, _site, topic, "publication", DateTime.Now, _sendSequence);
+            pub.originURL = _processURL;
 
-            TcpChannel channel = new TcpChannel();
-            ChannelServices.RegisterChannel(channel, false);
-            foreach(string parentNode in _siteBrokerUrl) {
-                INode sub = (INode)Activator.GetObject(typeof(INode), parentNode);
-                if (sub == null)
-                    System.Console.WriteLine("Could not locate parent node");
+            foreach(string url in _siteBrokerUrl) {
+                target = (INode)Activator.GetObject(typeof(INode), url);
+                if (target == null)
+                    System.Console.WriteLine("Failed to connect to " + url);
                 else {
-                    // TODO: sub.newPublication(pub);
+                    target.addToQueue(pub);
                 }
             }
         }

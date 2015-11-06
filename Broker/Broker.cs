@@ -138,31 +138,37 @@ namespace Broker {
         }
 
         public void sendPublication(Message pub) {
-            Broker remoteB = null;
+            INode target = null;
             Subscriber.Subscriber remoteS = null;
+            List<string> targetURL = new List<string>();
 
             
             if (!_routingPolicy) {
                 Console.WriteLine("Sending Message in Flood Mode...");
                 foreach (string url in _childProcessesURL) {
-                    //flood all available brokers
-                    remoteB = (Broker)Activator.GetObject(typeof(Broker), url);
-                    remoteB.addToQueue(pub);
-                    Console.WriteLine("Publication sent to lower level broker: " + url);
-                }
-                foreach (string url in _subscribers) {
-                    remoteS = (Subscriber.Subscriber)Activator.GetObject(typeof(Subscriber.Subscriber), url);
-                    remoteS.addToHistory(pub);
-                    Console.WriteLine("Publication sent to subscriber: " + url);
-                }
-                //TODO: if publication is actualy a subscription or unsubscription request, pass to parentBrokers
-                if (false) {
-                    foreach (string url in _parentProcessesURL) {
-                        remoteB = (Broker)Activator.GetObject(typeof(Broker), url);
-                        remoteB.addToQueue(pub);
-                        Console.WriteLine("Publication sent to higher level broker: " + url);
+                    if (!url.Equals(pub.originURL)) {
+                        targetURL.Add(url);
                     }
                 }
+                foreach (string url in _parentProcessesURL) {
+                    if (!url.Equals(pub.originURL)) {
+                        targetURL.Add(url);
+                    }
+                }
+                foreach (string url in _subscribers) {
+                    if (!url.Equals(pub.originURL)) {
+                        targetURL.Add(url);
+                    }
+                }
+
+                //flood all available brokers
+                pub.originURL = _processURL;
+                foreach (string url in targetURL) {
+                    target = (INode)Activator.GetObject(typeof(INode), url);
+                    target.addToQueue(pub);
+                    Console.WriteLine("Publication sent to: " + url);
+                }
+
             } else {
                 Console.WriteLine("Sending message in Filter Mode...");
                 foreach (string interestedTopic in _subscribersTopics.Keys) {
@@ -173,8 +179,8 @@ namespace Broker {
                                 remoteS = (Subscriber.Subscriber)Activator.GetObject(typeof(Subscriber.Subscriber), interestedURL);
                                 remoteS.addToHistory(pub);
                             } else {
-                                remoteB = (Broker)Activator.GetObject(typeof(Broker), interestedURL);
-                                remoteB.addToQueue(pub);
+                                target = (INode)Activator.GetObject(typeof(INode), interestedURL);
+                                target.addToQueue(pub);
                             }
                         }
                         break;

@@ -27,11 +27,10 @@ namespace Publisher {
                 p.addBrokerURL(brokers[i]);
             }
             p.publishToPuppetMaster();
-
-            //TODO: DO STUFF WITH P
-
-            //TEST CODE
-            System.Console.Read();
+            
+            while (true) {
+                //do nothing
+            }
         }
     }
 }

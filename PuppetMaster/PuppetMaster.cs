@@ -176,7 +176,7 @@ namespace PuppetMaster
             String orderingPatern = "^Ordering\\s(NO|FIFO|TOTAL)$";
             String subPatern = "^Subscriber\\s[A-Za-z0-9]+\\sSubscribe\\s[A-Za-z0-9/]+$";
             String unSubPatern = "^Subscriber\\s[A-Za-z0-9]+\\sUnsubscribe\\s[A-Za-z0-9/]+$";
-            String publisherPatern = "^Publisher\\s[A-Za-z0-9]+\\sPublish\\s[0-9]+\\sOntopic\\s[A-Za-z0-9/]+\\sInterval\\s[0-9]+$";
+            String publisherPatern = "^Publisher\\s[A-Za-z0-9]+\\sPublish\\s[0-9]+\\sOnTopic\\s[A-Za-z0-9/]+\\sInterval\\s[0-9]+$";
             String statusPatern = "^Status$";
             String carshPatern = "^Crash\\s[A-Za-z0-9]+$";
             String freezePatern = "^Freeze\\s[A-Za-z0-9]+$";
@@ -191,7 +191,7 @@ namespace PuppetMaster
             String startProcess = "^Start\\s(broker|subscriber|publisher)\\s[A-Za-z0-9]+$";
             String showPatern = "^Show$";
             String showNodePatern = "^ShowNode\\s(broker|subscriber|publisher)\\s[A-Za-z0-9]+$";
-            String SpawnPublicationPatern = "^SpawnPublication\\s[A-Za-z0-9]+\\s[A-Za-z0-9/]+$";
+            String SpawnPublicationPatern = "^SpawnPublication\\s[A-Za-z0-9]+\\s[A-Za-z0-9/]+\\s[0-9]+$";
             String addTopicPatern = "^AddTopic\\s[A-Za-z0-9]+\\s[A-Za-z0-9]+\\s[A-Za-z0-9/]+$";
             String quitPatern = "^Quit|Exit$";
 
@@ -298,7 +298,7 @@ namespace PuppetMaster
                         this.startProcess(parsed[1], parsed[2]);
                         break;
                     case "SpawnPublication":
-                        this.spawnPublication(parsed[1], parsed[2]);
+                        this.spawnPublication(parsed[1], parsed[2], Int32.Parse(parsed[3]));
                         break;
                     case "AddTopic":
                         this.addTopic(parsed[1], parsed[2], parsed[3]);
@@ -488,11 +488,11 @@ namespace PuppetMaster
             }
         }
 
-        public void spawnPublication(string processName, string topic) {
+        public void spawnPublication(string processName, string topic, int sequenceNumber) {
             foreach (Broker.Broker b in _brokers) {
                 if (b.getProcessName().Equals(processName) && b.getExecuting()) {
                     connectToNode("broker", processName);
-                    _remoteBroker.addToQueue(new Message(MessageType.Publication, b.getSite(), topic, "demoContent", DateTime.Now, 0));
+                    _remoteBroker.addToQueue(new Message(MessageType.Publication, b.getSite(), topic, "demoContent", DateTime.Now, sequenceNumber));
                     return;
                 }
             }
@@ -554,8 +554,17 @@ namespace PuppetMaster
                 }
             }
         }
-        public void Publish(String processName, int numberOfEvents, String topicName, int intervalMS) {
-            //TODO: something
+        public void Publish(String processName, int numberOfEvents, String topic, int intervalMS) {
+            foreach (Publisher.Publisher p in _publishers) {
+                if (p.getExecuting() && p.getProcessName().Equals(processName)) {
+                    for (int i = 0; i < numberOfEvents; i++) {
+                        Console.WriteLine("Requesting publication at " + processName + " " + numberOfEvents + " times, on topic: \"" + topic + "\" every: " + intervalMS + "ms"); 
+                        this.connectToNode("publisher", processName);
+                        _remotePub.Publish(topic);
+                        System.Threading.Thread.Sleep(intervalMS);
+                    }
+                }
+            }
         }
         public void LogLevel(String type) {
             if (type.Equals("full"))
