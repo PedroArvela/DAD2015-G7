@@ -1,10 +1,7 @@
 Import ..\..\tests\config.txt
-StartNetwork
-AddTopic gBroker bBroker test
-AddTopic bBroker mBroker test
-AddTopic mBroker mSub test
 RoutingPolicy filter
-Ordering FIFO
-Subscriber mSub Subscribe test
-Wait 10000
-Publisher yPub Publish 1 OnTopic test Interval 100
+LoggingLevel full
+StartNetwork
+Subscriber mSub Subscribe /topic/*
+wait 10
+Publisher yPub Publish 1 OnTopic /topic/all Interval 100

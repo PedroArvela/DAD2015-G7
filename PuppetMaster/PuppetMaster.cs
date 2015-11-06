@@ -333,7 +333,6 @@ namespace PuppetMaster
         }
 
         private void runScript(string scriptFilePath) {
-            this.startNetwork();
             StreamReader scriptStream = new StreamReader(scriptFilePath);
             String inString;
 
