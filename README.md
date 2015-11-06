@@ -16,9 +16,9 @@ To maintain code coherence please verify the following settings on Visual Studio
 ## Extra commands
 
 * `Import <path>`  
-  Imports a network configuration file from a specified file
+  Imports a network configuration file from a specified file (must be a .txt file)
 * `RunScript <path>`  
-  Runs a PuppetMaster script file from a specified file
+  Runs a PuppetMaster script file from a specified file (must be a .txt file)
 * `StartNetwork`  
   Spawn the all of the node processes  
   It is important to note that when running the commands to define the network topology, the
