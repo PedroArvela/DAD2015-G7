@@ -21,7 +21,7 @@ namespace Broker {
         private bool _delayed = false;
         private int _delayTime = 0;
 
-        public Broker(string processName, string processURL, string site, string routingtype, string puppetMasterURL) : base(processName, processURL, site, puppetMasterURL) {
+        public Broker(string processName, string processURL, string site, string routingtype, string puppetMasterURL, string loggingLevel) : base(processName, processURL, site, puppetMasterURL) {
             _puppetMasterURL = puppetMasterURL;
             _queue = new Queue<Message>();
             _subscribersTopics = new Dictionary<string, List<string>>();
@@ -33,6 +33,7 @@ namespace Broker {
                     _routingPolicy = true;
                     break;
             }
+            _loggingLevel = loggingLevel;
 
             //process start arguments
             _nodeProcess.StartInfo.FileName = "..\\..\\..\\Broker\\bin\\Debug\\Broker.exe";
@@ -333,12 +334,12 @@ namespace Broker {
         }
 
         protected override string getArguments() {
-            //processName processURL site routingtype puppetMasterURL -p parentURL -c childURL -s subURL
+            //processName processURL site routingtype puppetMasterURL loggingLevel -p parentURL -c childURL -s subURL
             string arguments = _processName + " " + _processURL + " " + _site + " ";
             if (_routingPolicy) {
-                arguments += "filter" + " " + _puppetMasterURL + " ";
+                arguments += "filter" + " " + _puppetMasterURL + " " + _loggingLevel;
             } else {
-                arguments += "flooding" + " " + _puppetMasterURL + " ";
+                arguments += "flooding" + " " + _puppetMasterURL + " " + _loggingLevel;
             }
 
             foreach (string parent in _parentProcessesURL) {
