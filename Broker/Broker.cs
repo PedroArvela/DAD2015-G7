@@ -183,14 +183,56 @@ namespace Broker {
             }
         }
 
+        private void shareSubRequest(string topic, string origin, Message request) {
+            List<string> shareList = new List<string>();
+            List<string> topicURL = null;
+            INode target = null;
+
+            foreach (String url in _parentProcessesURL) {
+                if (!url.Equals(origin)) { shareList.Add(url); }
+            }
+            foreach (String url in _childProcessesURL) {
+                if (!url.Equals(origin)) { shareList.Add(url); }
+            }
+
+            if (request.SubType.Equals(MessageType.Subscribe)) {
+                _subscribersTopics.TryGetValue(topic, out topicURL);
+                if (topicURL == null) {
+                    topicURL = new List<string>();
+                    topicURL.Add(origin);
+                    _subscribersTopics.Add(topic, topicURL);
+                } else {
+                    _subscribersTopics[topic].Add(origin);
+                }
+            }
+            else if (request.SubType.Equals(MessageType.Unsubscribe)) {
+                _subscribersTopics.TryGetValue(topic, out topicURL);
+                if (topicURL == null) {
+                    Console.WriteLine("Non-Existant Topic, cannont unsubscribe...");
+                    return;
+                } else {
+                    _subscribersTopics[topic].Remove(origin);
+                }
+            }
+
+            //share request
+            request.originURL = _processURL;
+            foreach (string url in shareList) {
+                target = (INode)Activator.GetObject(typeof(INode), url);
+                target.addToQueue(request);
+            }
+        }
+
         public void processQueue() {
             Message pub = null;
             if (_queue.Count > 0 && _enabled) {
                 lock (_queueLock) {
                     pub = _queue.Dequeue();
                     Console.WriteLine("Processing: " + pub.ToString());
-                    if (pub.GetType().Equals(MessageType.Subscribe) || pub.GetType().Equals(MessageType.Unsubscribe)) {
-                        Console.WriteLine(pub.GetType().ToString() + " request for topic " + pub.Topic);
+                    if (pub.SubType.Equals(MessageType.Subscribe) || pub.SubType.Equals(MessageType.Unsubscribe)) {
+                        Console.WriteLine(pub.SubType.ToString() + " request for topic " + pub.Topic);
+                        this.shareSubRequest(pub.Topic, pub.originURL, pub);
+                        
                     } else {
                         this.sendPublication(pub);
                     }

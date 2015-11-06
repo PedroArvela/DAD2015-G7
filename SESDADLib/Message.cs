@@ -14,6 +14,7 @@ namespace SESDADLib {
     [Serializable]
     public class Message {
         public MessageType SubType { get; }
+        public string originURL { get; set; }
         public string Site { get; }
         public string Topic { get; }
         public string Content { get; }

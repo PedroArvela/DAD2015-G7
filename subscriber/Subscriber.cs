@@ -56,6 +56,8 @@ namespace Subscriber {
 
         public void subscribe(string topic) {
             INode broker = null;
+            Message request = null;
+
             foreach (string brokerURL in _siteBrokerUrl)
             {
                 broker = (INode)Activator.GetObject(typeof(INode), brokerURL);
@@ -65,23 +67,31 @@ namespace Subscriber {
                     Console.WriteLine("Topic already Subscribed to...");
                 } else {
                     Console.WriteLine("Sending subscription request to: " + brokerURL);
-                    broker.addToQueue(new Message(MessageType.Subscribe, _site, topic, "subscribe", DateTime.Now, sendSequence));
-                    this.addTopic(topic);
+                    request = new Message(MessageType.Subscribe, _site, topic, "subscribe", DateTime.Now, sendSequence);
+                    request.originURL = _processURL;
+                    broker.addToQueue(request);
+                    _subscriptionTopics.Add(topic);
                     sendSequence++;
                 }
             }
         }
 
         public void unsubscribe(string topic) {
+            INode broker = null;
+            Message request = null;
+
             foreach (string brokerURL in _siteBrokerUrl)
             {
-                INode broker = (INode)Activator.GetObject(typeof(INode), brokerURL);
+                broker = (INode)Activator.GetObject(typeof(INode), brokerURL);
                 if (broker == null) {
                     Console.WriteLine("Could not connect to broker: " + brokerURL);
                 } else if (!_subscriptionTopics.Contains(topic)) {
                     Console.WriteLine("Non-existant Topic...");
                 } else {
-                    broker.addToQueue(new Message(MessageType.Unsubscribe, _site, topic, "unsubscribe", DateTime.Now, sendSequence));
+                    Console.WriteLine("Sending unsubscription request to: " + brokerURL);
+                    request = new Message(MessageType.Unsubscribe, _site, topic, "unsubscribe", DateTime.Now, sendSequence);
+                    request.originURL = _processURL;
+                    broker.addToQueue(request);
                     _subscriptionTopics.Remove(topic);
                     sendSequence++;
                 }
