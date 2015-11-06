@@ -30,7 +30,7 @@ namespace Subscriber {
             s.publishToPuppetMaster();
 
             while (true) {
-                // TODO: s.processQueue();
+                s.processQueue();
             }
         }
     }

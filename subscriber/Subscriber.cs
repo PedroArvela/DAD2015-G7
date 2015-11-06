@@ -10,13 +10,19 @@ namespace Subscriber {
         private int sendSequence = 0;
         private string _ordering;
         private List<string> _subscriptionTopics;
-        private Dictionary<string, List<Message>> _subscriptionHistory; //key -> topic | value -> history
+        private Dictionary<string, int> _lastDelivered; // key: pubURI
+        private Queue<Message> _queueMessages;
+        private Dictionary<string, Dictionary<int, Message>> _undeliveredList; // key: pubURI, value: undeliveredList
+        private List<Message> _messageHistory;
         private List<string> _siteBrokerUrl;
         private object _queueLock = new object();
 
         public Subscriber(string processName, string processURL, string site, string puppetMasterURL, string ordering) : base(processName, processURL, site, puppetMasterURL) {
             _subscriptionTopics = new List<string>();
-            _subscriptionHistory = new Dictionary<string, List<Message>>();
+            _lastDelivered = new Dictionary<string, int>();
+            _queueMessages = new Queue<Message>();
+            _undeliveredList = new Dictionary<string, Dictionary<int, Message>>();
+            _messageHistory = new List<Message>();
             _siteBrokerUrl = new List<string>();
             _ordering = ordering;
 
@@ -47,14 +53,48 @@ namespace Subscriber {
 
         public void addToHistory(Message pub) {
             string topic = pub.Topic;
-            List<Message> messages = null;
 
-            _subscriptionHistory.TryGetValue(topic, out messages);
+            _queueMessages.Enqueue(pub);
+        }
+
+        public void processQueue() {
+            Message pub;
+            lock (_queueLock) {
+                pub = _queueMessages.Dequeue();
+            }
+
+            string origin = pub.originURL;
+            int seq = pub.Sequence;
+
+            Dictionary<int, Message> messages = null;
+
+            // TODO: Move this to addBrokerURL
+            _undeliveredList.TryGetValue(origin, out messages);
             if (messages == null) {
-                _subscriptionHistory.Add(topic, new List<Message>());
-                _subscriptionHistory[topic].Add(pub);
+                _undeliveredList.Add(origin, new Dictionary<int, Message>());
+            }
+
+            int lastDelivered = -1;
+            _lastDelivered.TryGetValue(origin, out lastDelivered);
+            if (lastDelivered == seq - 1) {
+                _messageHistory.Add(pub);
+
+                if (!_lastDelivered.ContainsKey(origin)) {
+                    _lastDelivered.Add(origin, seq);
+                } else {
+                    _lastDelivered[origin] = seq;
+                }
+
+                while (_undeliveredList[origin].ContainsKey(_lastDelivered[origin] + 1)) {
+                    pub = _undeliveredList[origin][_lastDelivered[origin] + 1];
+                    _undeliveredList[origin].Remove(_lastDelivered[origin] + 1);
+
+                    _messageHistory.Add(pub);
+
+                    _lastDelivered[origin] += 1;
+                }
             } else {
-                _subscriptionHistory[topic].Add(pub);
+                _undeliveredList[origin].Add(pub.Sequence, pub);
             }
         }
 
@@ -123,13 +163,13 @@ namespace Subscriber {
             foreach (string topic in _subscriptionTopics) {
                 print += "\t\t" + topic + "\n";
             }
-            print += "\tSubscription History\n";
-            foreach (KeyValuePair<string, List<Message>> entry in _subscriptionHistory) {
-                print += "\t\t" + entry.Key + "\n";
-                foreach (Message pub in entry.Value) {
-                    print += "\t\t\t" + pub.ToString();
-                }
-            }
+            //print += "\tSubscription History\n";
+            //foreach (KeyValuePair<string, List<Message>> entry in _undeliveredList) {
+            //    print += "\t\t" + entry.Key + "\n";
+            //    foreach (Message pub in entry.Value) {
+            //       print += "\t\t\t" + pub.ToString();
+            //    }
+            //}
             return print;
         }
 
