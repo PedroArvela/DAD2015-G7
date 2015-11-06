@@ -189,7 +189,7 @@ namespace PuppetMaster
             String freezePatern = "^Freeze\\s[A-Za-z0-9]+$";
             String unfreezePatern = "^Unfreeze\\s[A-Za-z0-9]+$";
             String waitPatern = "^Wait\\s[0-9]+$";
-            String loggingPatern = "^LogginLevel\\s(full|light)$";
+            String loggingPatern = "^LoggingLevel\\s(full|light)$";
             String validateWindowsPath = "(?:[\\w]\\:|\\\\|\\.|\\.\\.)(\\\\[A-Za-z_\\-\\s0-9\\.]+)+\\.(txt|log)";
             String importFile = "^Import\\s" + validateWindowsPath + "$";
             String importScript = "^RunScript\\s" + validateWindowsPath + "$";
