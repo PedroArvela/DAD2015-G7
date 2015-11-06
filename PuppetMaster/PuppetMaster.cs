@@ -403,9 +403,9 @@ namespace PuppetMaster
                 switch (type) {
                     case "broker":
                         if (_routingPolicy) {
-                            b = new Broker.Broker(processName, Url, Site, "filter", this._masterURL);
+                            b = new Broker.Broker(processName, Url, Site, "filter", this._masterURL, _loggingLevel);
                         } else {
-                            b = new Broker.Broker(processName, Url, Site, "flooding", this._masterURL);
+                            b = new Broker.Broker(processName, Url, Site, "flooding", this._masterURL, _loggingLevel);
                         }
                         if (targetSite.getParent() != null) {
                             foreach(string url in targetSite.getParent().getBrokerUrls()) {

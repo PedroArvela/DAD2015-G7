@@ -15,12 +15,13 @@ namespace Broker {
             string site = args[2];
             string routing = args[3];
             string puppetMasterURL = args[4];
+            string loggingLevel = args[5];
 
             List<string> childList = new List<string>();
             List<string> parentList = new List<string>();
             List<string> subList = new List<string>();
 
-            for (int i = 5; i < args.Length; i+=2) {
+            for (int i = 6; i < args.Length; i+=2) {
                 switch (args[i]) {
                     case "-p":
                         parentList.Add(args[i + 1]);
@@ -35,7 +36,7 @@ namespace Broker {
             }
 
             //initialization of data finished
-            Broker b = new Broker(processName, processURL, site, routing, puppetMasterURL);
+            Broker b = new Broker(processName, processURL, site, routing, puppetMasterURL, loggingLevel);
             foreach (string c in childList) {
                 b.addChildUrl(c);
             }
