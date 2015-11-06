@@ -67,6 +67,13 @@ namespace Subscriber {
                 pub = _queueMessages.Dequeue();
             }
 
+            // No ordering
+            if (_ordering == "NO") {
+                _messageHistory.Add(pub);
+                return;
+            }
+
+            // FIFO ordering
             string origin = pub.originURL;
             int seq = pub.Sequence;
 
