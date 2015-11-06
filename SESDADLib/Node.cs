@@ -25,6 +25,7 @@ namespace SESDADLib {
             _processURL = processURL;
             _site = site;
             _puppetMasterURL = puppetMasterURL;
+            _loggingLevel = "light";
             _nodeProcess = new Process();
 
             _port = int.Parse(_processURL.Split(':')[2].Split('/')[0]);
