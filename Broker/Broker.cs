@@ -178,7 +178,7 @@ namespace Broker {
                 Console.WriteLine("Sending message in Filter Mode...");
                 foreach (string interestedTopic in _subscribersTopics.Keys) {
                     Console.WriteLine("testing... " + interestedTopic + " matches " + pub.Topic);
-                    if (interestedTopic.Equals(pub.Topic)) {
+                    if (this.compatibleTopics(interestedTopic, pub.Topic)) {
                         foreach (string interestedURL in _subscribersTopics[interestedTopic]) {
                             if (_subscribers.Contains(interestedURL)) {
                                 remoteS = (Subscriber.Subscriber)Activator.GetObject(typeof(Subscriber.Subscriber), interestedURL);
@@ -194,46 +194,58 @@ namespace Broker {
             }
         }
 
-        public bool compatibleTopics(string topic, string test) {
+        private bool compatibleTopics(string topic, string test) {
             string[] masterTopic = topic.Split('/');
             string[] testTopic = test.Split('/');
             int masterTopicSize = masterTopic.Length;
             int testTopicSize = testTopic.Length;
 
-            if (masterTopic[0].Equals("*")) {
-                return true;
-            } else {
-                if (masterTopicSize > testTopicSize) {
-                    for (int i = 0; i < testTopicSize; i++) {
-                        if (!masterTopic[i].Equals(testTopic[i])) {
-                            if (masterTopic[i].Equals("*") || testTopic[0].Equals("*")) {
-                                return true;
-                            }
-                            return false;
-                        }
-                    }
-                } else if (masterTopicSize < testTopicSize) {
-                    for (int i = 0; i < testTopicSize; i++) {
-                        if (!masterTopic[i].Equals(testTopic[i])) {
-                            if (masterTopic[i].Equals("*") || testTopic[0].Equals("*")) {
-                                return true;
-                            }
-                            return false;
-                        }
-                    }
-                } else if (masterTopicSize == testTopicSize) {
-                    for (int i = 0; i < testTopicSize; i++) {
-                        if (!masterTopic[i].Equals(testTopic[i])) {
-                            if (masterTopic[i].Equals("*") || testTopic[0].Equals("*")) {
-                                return true;
-                            }
-                            return false;
-                        }
-                    }
-                }
+            Console.Write("analysing MASTER:\n\t");
+            for (int i = 0; i < masterTopicSize; i++) {
+                Console.Write(masterTopic[i] + " ");
+            }
+            Console.Write("\nanalysing TEST:\n\t");
+            for (int i = 0; i < testTopicSize; i++) {
+                Console.Write(testTopic[i] + " ");
             }
 
-            return false;
+            if (masterTopic[0].Equals("*") || topic.Equals(test)) {
+                Console.Write("\nMatch\n");
+                return true;
+            } else {
+                if (masterTopicSize == testTopicSize) {
+                    for (int i = 0; i < testTopicSize; i++) {
+                        if (!masterTopic[i].Equals(testTopic[i])) {
+                            if (masterTopic[i].Equals("*") || testTopic[0].Equals("*")) {
+                                Console.Write("\nMatch\n");
+                                return true;
+                            }
+                            Console.Write("\nNO-Match\n");
+                            return false;
+                        }
+                    }
+                } else if (masterTopicSize > testTopicSize) {
+                    Console.Write("\nNO-Match\n");
+                    return false;
+                } else if (masterTopicSize < testTopicSize) {
+                    for (int i = 0; i < testTopicSize; i++) {
+                        if (i >= masterTopicSize) {
+                            Console.Write("\nNO-Match\n");
+                            return false;
+                        }
+                        if (!masterTopic[i].Equals(testTopic[i])) {
+                            if (masterTopic[i].Equals("*")) {
+                                Console.Write("\nMatch\n");
+                                return true;
+                            }
+                        }
+                    }
+                    Console.Write("\nNO-Match\n");
+                    return false;
+                }
+            }
+            Console.Write("\nMatch\n");
+            return true;
         }
 
         private void shareSubRequest(string topic, string origin, Message request) {
