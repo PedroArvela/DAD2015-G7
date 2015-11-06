@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace PuppetMaster
 {
-    public class PuppetMaster {
+    public class PuppetMaster : MarshalByRefObject, IPuppetMaster {
 
         private List<Broker.Broker> _brokers;
         private List<Publisher.Publisher> _publishers;
@@ -25,7 +25,9 @@ namespace PuppetMaster
         private Publisher.Publisher _remotePub = null;
         private Subscriber.Subscriber _remoteSub = null;
 
-        private bool loggingLevel = false;
+        private Object _logLock = new Object();
+
+        private string _loggingLevel = "light";
         private bool _routingPolicy = false;
         private String logFile = ".\\Logfile.txt";
         private String _ordering = "NO";
@@ -34,7 +36,6 @@ namespace PuppetMaster
 
         static void Main(string[] args) {
             PuppetMaster master = new PuppetMaster("tcp://localhost:1337/puppetMaster");
-            master.announcePuppetMaster();
             bool open = true;
 
             Console.WriteLine("Welcome!\n" + Directory.GetCurrentDirectory());
@@ -117,9 +118,14 @@ namespace PuppetMaster
 
         public void announcePuppetMaster() {
             int port = Int32.Parse(_masterURL.Split(':')[2].Split('/')[0]);
+            string uri = _masterURL.Split(':')[2].Split('/')[1];
+
+            Console.WriteLine("Publishing IPuppetMaster on port: " + port.ToString() + " with uri: " + uri);
 
             TcpChannel channel = new TcpChannel(port);
             ChannelServices.RegisterChannel(channel, false);
+
+            RemotingServices.Marshal(this, uri, typeof(IPuppetMaster));
         }
 
         public void connectToNode(string type, string name) {
@@ -225,10 +231,10 @@ namespace PuppetMaster
             regs.Add(new Regex(quitPatern, RegexOptions.None));
 
             foreach (Regex r in regs) {
-                Console.WriteLine("Atempting rule: " + r.ToString());
+                //Console.WriteLine("Atempting rule: " + r.ToString());
                 m = r.Match(command);
                 if (m.Success) {
-                    Console.WriteLine("Command Matched to: " + r.ToString());
+                    //Console.WriteLine("Command Matched to: " + r.ToString());
                     parse = new ArrayList(command.Split(' '));
                     break;
                 }
@@ -278,7 +284,7 @@ namespace PuppetMaster
                         this.wait(Int32.Parse(parsed[1]));
                         break;
                     case "LogginLevel":
-                        this.LogLevel(parsed[1]);
+                        this.changeLoggingLevel(parsed[1]);
                         break;
                     case "RunScript":
                         this.runScript(parsed[1]);
@@ -435,10 +441,14 @@ namespace PuppetMaster
         }
 
         private void writeToLog(string msg) {
-            logFilePipe.WriteLine("[" + DateTime.Now.ToString("dd/MM/yyyy - HH:mm:ss")  + "] - " + msg);
+            lock (_logLock) {
+                logFilePipe.WriteLine("[" + DateTime.Now.ToString("dd/MM/yyyy - HH:mm:ss") + "] - " + msg);
+            }
         }
 
         private void startNetwork() {
+            this.announcePuppetMaster();
+
             foreach (Broker.Broker b in _brokers) {
                 startProcess("broker", b.getProcessName());
             }
@@ -588,15 +598,7 @@ namespace PuppetMaster
                 }
             }
         }
-        public void LogLevel(String type) {
-            if (type.Equals("full"))
-            {
-                loggingLevel = true;
-            }
-            else {
-                loggingLevel = false;
-            }
-        }
+
         public void changeLogFile(String logfilePath) {
             this.logFile = logfilePath;
             logFilePipe.Close();
@@ -696,9 +698,36 @@ namespace PuppetMaster
                 }
             }
         }
-        public void logginLevel(String level) {
+        public void changeLoggingLevel(String level) {
             Console.WriteLine("Logging Request");
-            //TODO: something
+            _loggingLevel = level;
+            foreach(Broker.Broker b in _brokers) {
+                b.setLoggingLevel(level);
+                if (b.getExecuting()) {
+                    this.connectToNode("broker", b.getProcessName());
+                    _remoteBroker.setLoggingLevel(level);
+                }
+            }
+            foreach (Publisher.Publisher p in _publishers) {
+                p.setLoggingLevel(level);
+                if (p.getExecuting()) {
+                    this.connectToNode("publisher", p.getProcessName());
+                    _remotePub.setLoggingLevel(level);
+                }
+            }
+            foreach (Subscriber.Subscriber s in _subscribers) {
+                s.setLoggingLevel(level);
+                if (s.getExecuting()) {
+                    this.connectToNode("subscriber", s.getProcessName());
+                    _remoteSub.setLoggingLevel(level);
+                }
+            }
+        }
+
+        public void reportToLog(string message) {
+            lock (_logLock) {
+                this.writeToLog(message);
+            }
         }
     }
 }
