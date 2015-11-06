@@ -55,30 +55,34 @@ namespace Subscriber {
         }
 
         public void subscribe(string topic) {
-            TcpChannel channel = new TcpChannel();
-            ChannelServices.RegisterChannel(channel, false);
-            foreach (string parentNode in _siteBrokerUrl)
+            INode broker = null;
+            foreach (string brokerURL in _siteBrokerUrl)
             {
-                INode broker = (INode)Activator.GetObject(typeof(INode), parentNode);
-                if (broker == null)
-                    System.Console.WriteLine("Could not locate parent node");
-                else {
-                    broker.addToQueue(new Message(MessageType.Subscribe, _site, topic, "", new DateTime(), sendSequence));
+                broker = (INode)Activator.GetObject(typeof(INode), brokerURL);
+                if (broker == null) {
+                    Console.WriteLine("Could not connect to broker: " + brokerURL);
+                } else if(_subscriptionTopics.Contains(topic)) {
+                    Console.WriteLine("Topic already Subscribed to...");
+                } else {
+                    Console.WriteLine("Sending subscription request to: " + brokerURL);
+                    broker.addToQueue(new Message(MessageType.Subscribe, _site, topic, "subscribe", DateTime.Now, sendSequence));
+                    this.addTopic(topic);
                     sendSequence++;
                 }
             }
         }
 
         public void unsubscribe(string topic) {
-            TcpChannel channel = new TcpChannel();
-            ChannelServices.RegisterChannel(channel, false);
-            foreach (string parentNode in _siteBrokerUrl)
+            foreach (string brokerURL in _siteBrokerUrl)
             {
-                INode broker = (INode)Activator.GetObject(typeof(INode), parentNode);
-                if (broker == null)
-                    System.Console.WriteLine("Could not locate parent node");
-                else {
-                    broker.addToQueue(new Message(MessageType.Unsubscribe, _site, topic, "", new DateTime(), sendSequence));
+                INode broker = (INode)Activator.GetObject(typeof(INode), brokerURL);
+                if (broker == null) {
+                    Console.WriteLine("Could not connect to broker: " + brokerURL);
+                } else if (!_subscriptionTopics.Contains(topic)) {
+                    Console.WriteLine("Non-existant Topic...");
+                } else {
+                    broker.addToQueue(new Message(MessageType.Unsubscribe, _site, topic, "unsubscribe", DateTime.Now, sendSequence));
+                    _subscriptionTopics.Remove(topic);
                     sendSequence++;
                 }
             }

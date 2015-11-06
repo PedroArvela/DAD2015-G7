@@ -174,9 +174,9 @@ namespace PuppetMaster
             String processPatern = "^Process\\s[A-Za-z0-9]+\\sIs\\s(broker|publisher|subscriber)\\sOn\\s[A-Za-z0-9]+\\sURL\\stcp://((([0-9]+\\.){3}[0-9])|localhost):[0-9]{3,}/[A-Za-z]+$";
             String routingPatern = "^RoutingPolicy\\s(flooding|filter)$";
             String orderingPatern = "^Ordering\\s(NO|FIFO|TOTAL)$";
-            String subPatern = "^Subscriber\\s[A-Za-z0-9]+\\sSubscribe\\s[A-Za-z0-9]+$";
-            String unSubPatern = "^Subscriber\\s[A-Za-z0-9]+\\sUnsubscribe\\s[A-Za-z0-9]+$";
-            String publisherPatern = "^Publisher\\s[A-Za-z0-9]+\\sPublish\\s[0-9]+\\sOntopic\\s[A-Za-z0-9]+\\sInterval\\s[0-9]+$";
+            String subPatern = "^Subscriber\\s[A-Za-z0-9]+\\sSubscribe\\s[A-Za-z0-9/]+$";
+            String unSubPatern = "^Subscriber\\s[A-Za-z0-9]+\\sUnsubscribe\\s[A-Za-z0-9/]+$";
+            String publisherPatern = "^Publisher\\s[A-Za-z0-9]+\\sPublish\\s[0-9]+\\sOntopic\\s[A-Za-z0-9/]+\\sInterval\\s[0-9]+$";
             String statusPatern = "^Status$";
             String carshPatern = "^Crash\\s[A-Za-z0-9]+$";
             String freezePatern = "^Freeze\\s[A-Za-z0-9]+$";
@@ -250,9 +250,9 @@ namespace PuppetMaster
                         break;
                     case "Subscriber":
                         if (parsed[2].Equals("Subscribe")) {
-                            this.UnSubscribe(parsed[1], parsed[3]);
-                        } else {
                             this.Subscribe(parsed[1], parsed[3]);
+                        } else {
+                            this.UnSubscribe(parsed[1], parsed[3]);
                         }
                         break;
                     case "Publisher":
@@ -539,10 +539,20 @@ namespace PuppetMaster
         }
 
         public void Subscribe(String processName, String topicName) {
-            //TODO: something
+            foreach (Subscriber.Subscriber s in _subscribers) {
+                if (s.getExecuting() && s.getProcessName().Equals(processName)) {
+                    this.connectToNode("subscriber", processName);
+                    _remoteSub.subscribe(topicName);
+                }
+            }
         }
         public void UnSubscribe(String processName, String topicName) {
-            //TODO: something
+            foreach (Subscriber.Subscriber s in _subscribers) {
+                if (s.getExecuting() && s.getProcessName().Equals(processName)) {
+                    this.connectToNode("subscriber", processName);
+                    _remoteSub.unsubscribe(topicName);
+                }
+            }
         }
         public void Publish(String processName, int numberOfEvents, String topicName, int intervalMS) {
             //TODO: something

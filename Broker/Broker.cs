@@ -189,8 +189,11 @@ namespace Broker {
                 lock (_queueLock) {
                     pub = _queue.Dequeue();
                     Console.WriteLine("Processing: " + pub.ToString());
-                    //TODO: if pub is actualy a subscription request, or unsubscription call diferent function than "sendPublication"
-                    this.sendPublication(pub);
+                    if (pub.GetType().Equals(MessageType.Subscribe) || pub.GetType().Equals(MessageType.Unsubscribe)) {
+                        Console.WriteLine(pub.GetType().ToString() + " request for topic " + pub.Topic);
+                    } else {
+                        this.sendPublication(pub);
+                    }
                 }
             } else {
                 //nothing to do
