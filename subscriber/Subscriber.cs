@@ -69,7 +69,7 @@ namespace Subscriber {
             }
 
             // TODO: Move this to addBrokerURL
-            string origin = pub.originURL;
+            string origin = pub.Publisher;
             int seq = pub.Sequence;
 
             Dictionary<int, Message> messages = null;
@@ -84,7 +84,7 @@ namespace Subscriber {
 
             // No ordering
             if (_ordering == "NO") {
-                Console.WriteLine("Delivering message on topic " + pub.Topic + " from " + pub.originURL + " sequence " + pub.Sequence);
+                Console.WriteLine("Delivering message on topic " + pub.Topic + " from " + pub.Publisher + " sequence " + pub.Sequence);
                 writeToLog("SubEvent " + _processName + ", " + pub.Publisher + ", " + pub.Topic + ", " + eventNumber);
                 eventNumber++;
 
@@ -94,11 +94,11 @@ namespace Subscriber {
             }
 
             // FIFO ordering
-            Console.WriteLine("Processing message on topic " + pub.Topic + " from " + pub.originURL + " sequence " + pub.Sequence);
+            Console.WriteLine("Processing message on topic " + pub.Topic + " from " + pub.Publisher + " sequence " + pub.Sequence);
 
             Console.WriteLine("Sequence: " + seq + "\tLast: " + _lastDelivered[origin]);
             if (_lastDelivered[origin] == seq - 1) {
-                Console.WriteLine("Delivering message on topic" + pub.Topic + " from " + pub.originURL + " sequence " + pub.Sequence);
+                Console.WriteLine("Delivering message on topic" + pub.Topic + " from " + pub.Publisher + " sequence " + pub.Sequence);
                 writeToLog("SubEvent " + _processName + ", " + pub.Publisher + ", " + pub.Topic + ", " + eventNumber);
                 eventNumber++;
 

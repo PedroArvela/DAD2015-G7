@@ -1,5 +1,6 @@
 ﻿using SESDADLib;
 using System;
+using System.Threading;
 using System.Collections.Generic;
 using System.Runtime.Remoting;
 using System.Runtime.Remoting.Channels;
@@ -10,6 +11,8 @@ namespace Publisher{
         private List<string> _siteBrokerUrl;
         private List<string> _topics;
         private List<Message> _pubHistory;
+        private Object _publicationLock = new Object();
+        private Object _sendLock = new Object();
         private int _sendSequence;
 
         public Publisher(string processName, string processURL, string site, string puppetMasterURL) : base(processName, processURL, site, puppetMasterURL) {
@@ -29,21 +32,37 @@ namespace Publisher{
             _topics.Add(topic);
         }
 
-        public void Publish(string topic) {
-            INode target = null;
-            Message pub = new Message(MessageType.Publication, _site, topic, "publication", DateTime.Now, _sendSequence, _processName);
-            this._pubHistory.Add(pub);
-            pub.originURL = _processURL;
-            _sendSequence++;
+        public void addPublishRequest(string topic, int times, int intervalMS) {
+            lock (_publicationLock) {
+                Console.WriteLine("New publication request");
+                Thread publishTask = new Thread(() => Publish(topic, times, intervalMS));
+                publishTask.Start();
+            }
+        }
 
-            foreach(string url in _siteBrokerUrl) {
-                target = (INode)Activator.GetObject(typeof(INode), url);
-                if (target == null)
-                    System.Console.WriteLine("Failed to connect to " + url);
-                else {
-                    target.addToQueue(pub);
-                    this.writeToLog("PubEvent" + _processName + ", " + _processURL + ", " + topic + ", " + _sendSequence);
+        private void Publish(string topic, int numberOfEvents, int intervalMS) {
+            INode target = null;
+            Message pub = null;
+            int sequence = -1;
+
+            for (int i = 0; i < numberOfEvents; i++) {
+                lock (_sendLock) {
+                    sequence = _sendSequence;
+                    pub = new Message(MessageType.Publication, _site, topic, "publication", DateTime.Now, sequence, _processName);
+                    pub.originURL = _processURL;
+                    _pubHistory.Add(pub);
+                    _sendSequence++;
                 }
+                foreach (string url in _siteBrokerUrl) {
+                    target = (INode)Activator.GetObject(typeof(INode), url);
+                    if (target == null)
+                        System.Console.WriteLine("Failed to connect to " + url);
+                    else {
+                        target.addToQueue(pub);
+                        this.writeToLog("PubEvent" + _processName + ", " + _processURL + ", " + topic + ", " + _sendSequence);
+                    }
+                }
+                Thread.Sleep(intervalMS);
             }
         }
 

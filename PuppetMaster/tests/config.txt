@@ -1,3 +1,5 @@
+RoutingPolicy filter
+LoggingLevel full
 Site google Parent none
 Site yhaoo Parent google
 Site blinx Parent google
@@ -10,6 +12,7 @@ Process mBroker Is broker On microsoft URL tcp://localhost:1237/mBroker
 Process aBroker Is broker On apple URL tcp://localhost:1238/aBroker
 Process yPub Is publisher On yhaoo URL tcp://localhost:1239/yPub
 Process mSub Is subscriber On microsoft URL tcp://localhost:1240/mSub
+Process aSub Is subscriber On apple URL tcp://localhost:1241/aSub
 ---EOC---
 
 

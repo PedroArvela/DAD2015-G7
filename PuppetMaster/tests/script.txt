@@ -1,7 +1,3 @@
 Import ..\..\tests\config.txt
-RoutingPolicy filter
-LoggingLevel full
 StartNetwork
-Subscriber mSub Subscribe /topic/*
-wait 10
-Publisher yPub Publish 1 OnTopic /topic/all Interval 100
+Publisher yPub Publish 1 OnTopic /test Interval 100

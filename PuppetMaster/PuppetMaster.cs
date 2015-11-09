@@ -594,12 +594,9 @@ namespace PuppetMaster
         public void Publish(String processName, int numberOfEvents, String topic, int intervalMS) {
             foreach (Publisher.Publisher p in _publishers) {
                 if (p.getExecuting() && p.getProcessName().Equals(processName)) {
-                    for (int i = 0; i < numberOfEvents; i++) {
-                        Console.WriteLine("Requesting publication at " + processName + " " + numberOfEvents + " times, on topic: \"" + topic + "\" every: " + intervalMS + "ms"); 
-                        this.connectToNode("publisher", processName);
-                        _remotePub.Publish(topic);
-                        System.Threading.Thread.Sleep(intervalMS);
-                    }
+                    Console.WriteLine("Requesting publication at " + processName + " " + numberOfEvents + " times, on topic: \"" + topic + "\" every: " + intervalMS + "ms");
+                    this.connectToNode("publisher", processName);
+                    _remotePub.addPublishRequest(topic, numberOfEvents, intervalMS);
                 }
             }
         }
