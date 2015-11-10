@@ -46,17 +46,13 @@ namespace Subscriber {
         }
 
         public void addToQueue(Message msg) {
-            Console.WriteLine(msg.Content);
+            string topic = null;
+
             lock (_queueLock) {
-                addToHistory(msg);
+                topic = msg.Topic;
+                Console.WriteLine("New unordered message on topic " + msg.Topic + " from " + msg.originURL + " sequence " + msg.Sequence);
+                _queueMessages.Enqueue(msg);
             }
-        }
-
-        public void addToHistory(Message pub) {
-            string topic = pub.Topic;
-
-            Console.WriteLine("New unordered message on topic " + pub.Topic + " from " + pub.originURL + " sequence " + pub.Sequence);
-            _queueMessages.Enqueue(pub);
         }
 
         public void processQueue() {
@@ -124,7 +120,7 @@ namespace Subscriber {
 
             foreach (string brokerURL in _siteBrokerUrl)
             {
-                broker = (INode)Activator.GetObject(typeof(INode), brokerURL);
+                broker = this.aquireConnection(brokerURL);
                 if (broker == null) {
                     Console.WriteLine("Could not connect to broker: " + brokerURL);
                 } else if(_subscriptionTopics.Contains(topic)) {
@@ -148,7 +144,7 @@ namespace Subscriber {
 
             foreach (string brokerURL in _siteBrokerUrl)
             {
-                broker = (INode)Activator.GetObject(typeof(INode), brokerURL);
+                broker = this.aquireConnection(brokerURL);
                 if (broker == null) {
                     Console.WriteLine("Could not connect to broker: " + brokerURL);
                 } else if (!_subscriptionTopics.Contains(topic)) {

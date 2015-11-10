@@ -54,7 +54,7 @@ namespace Publisher{
                     _sendSequence++;
                 }
                 foreach (string url in _siteBrokerUrl) {
-                    target = (INode)Activator.GetObject(typeof(INode), url);
+                    target = this.aquireConnection(url);
                     if (target == null)
                         System.Console.WriteLine("Failed to connect to " + url);
                     else {

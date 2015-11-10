@@ -145,7 +145,6 @@ namespace Broker {
 
         public void sendPublication(Message pub) {
             INode target = null;
-            Subscriber.Subscriber remoteS = null;
             List<string> targetURL = new List<string>();
 
             
@@ -170,7 +169,7 @@ namespace Broker {
                 //flood all available brokers
                 pub.originURL = _processURL;
                 foreach (string url in targetURL) {
-                    target = (INode)Activator.GetObject(typeof(INode), url);
+                    target = this.aquireConnection(url);
                     target.addToQueue(pub);
                     if (_loggingLevel.Equals("full"))
                         this.writeToLog("BroEvent " + _processName + ", " + pub.Publisher + ", " + pub.Topic + ", " + pub.Sequence);
@@ -183,11 +182,12 @@ namespace Broker {
                     Console.WriteLine("testing... " + interestedTopic + " matches " + pub.Topic);
                     if (this.compatibleTopics(interestedTopic, pub.Topic)) {
                         foreach (string interestedURL in _subscribersTopics[interestedTopic]) {
+                            //FIX-ME: possible redundant code
                             if (_subscribers.Contains(interestedURL)) {
-                                remoteS = (Subscriber.Subscriber)Activator.GetObject(typeof(Subscriber.Subscriber), interestedURL);
-                                remoteS.addToHistory(pub);
+                                target = this.aquireConnection(interestedURL);
+                                target.addToQueue(pub);
                             } else {
-                                target = (INode)Activator.GetObject(typeof(INode), interestedURL);
+                                target = this.aquireConnection(interestedURL);
                                 target.addToQueue(pub);
                             }
                             if(_loggingLevel.Equals("full"))
@@ -293,7 +293,7 @@ namespace Broker {
             //share request
             request.originURL = _processURL;
             foreach (string url in shareList) {
-                target = (INode)Activator.GetObject(typeof(INode), url);
+                target = this.aquireConnection(url);
                 target.addToQueue(request);
             }
         }

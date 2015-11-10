@@ -14,6 +14,8 @@ namespace SESDADLib {
 
         protected string _site;
 
+        protected Dictionary<string, INode> _connections; //key == url, value == INode
+
         protected string _puppetMasterURL;
         protected bool _enabled = true;
         protected bool _executing = false;
@@ -30,6 +32,8 @@ namespace SESDADLib {
 
             _port = int.Parse(_processURL.Split(':')[2].Split('/')[0]);
             _uriAddress = _processURL.Split(':')[2].Split('/')[1];
+
+            _connections = new Dictionary<string, INode>();
         }
 
         public string getProcessName() { return _processName; }
@@ -51,6 +55,20 @@ namespace SESDADLib {
         protected abstract string getArguments();
 
         public abstract void executeProcess();
+
+        protected INode aquireConnection(string url) {
+            INode target = null;
+
+            _connections.TryGetValue(url, out target);
+
+            if (target == null) {
+                target = (INode)Activator.GetObject(typeof(INode), url);
+                _connections.Add(url, target);
+                return target;
+            } else {
+                return target;
+            }
+        }
 
         public void closeProcess() {
             _nodeProcess.Kill();

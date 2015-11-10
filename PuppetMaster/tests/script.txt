@@ -1,3 +1,4 @@
 Import ..\..\tests\config.txt
 StartNetwork
+Subscriber mSub Subscribe /test
 Publisher yPub Publish 1 OnTopic /test Interval 100
