@@ -289,7 +289,7 @@ namespace PuppetMaster
                         this.wait(Int32.Parse(parsed[1]));
                         this.writeToLog(command);
                         break;
-                    case "LogginLevel":
+                    case "LoggingLevel":
                         this.changeLoggingLevel(parsed[1]);
                         break;
                     case "RunScript":
@@ -701,7 +701,7 @@ namespace PuppetMaster
             }
         }
         public void changeLoggingLevel(String level) {
-            Console.WriteLine("Logging Request");
+            Console.WriteLine("Logging Request: " + level);
             _loggingLevel = level;
             foreach(Broker.Broker b in _brokers) {
                 b.setLoggingLevel(level);

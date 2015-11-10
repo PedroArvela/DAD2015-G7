@@ -14,7 +14,7 @@ Process yPub Is publisher On yhaoo URL tcp://localhost:1239/yPub
 Process mSub Is subscriber On microsoft URL tcp://localhost:1240/mSub
 Process aSub Is subscriber On apple URL tcp://localhost:1241/aSub
 ---EOC---
-
+This is a template configuration file
 
 					google
 					  |
