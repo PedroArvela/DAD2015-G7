@@ -30,7 +30,10 @@ namespace Subscriber {
             _nodeProcess.StartInfo.FileName = "..\\..\\..\\Subscriber\\bin\\Debug\\Subscriber.exe";
         }
 
-        public void setOrdering(String order) { _ordering = order; }
+        public void setOrdering(String order) {
+            Console.WriteLine("Setting ordering to " + order);
+            _ordering = order;
+        }
 
         public void addTopic(string topic) {
             _subscriptionTopics.Add(topic);
@@ -46,11 +49,8 @@ namespace Subscriber {
         }
 
         public void addToQueue(Message msg) {
-            string topic = null;
-
             lock (_queueLock) {
-                topic = msg.Topic;
-                Console.WriteLine("New unordered message on topic " + msg.Topic + " from " + msg.originURL + " sequence " + msg.Sequence);
+                Console.WriteLine("New unordered message on topic " + msg.Topic + " from " + msg.Publisher + " sequence " + msg.Sequence);
                 _queueMessages.Enqueue(msg);
             }
         }
@@ -64,52 +64,59 @@ namespace Subscriber {
                 pub = _queueMessages.Dequeue();
             }
 
-            // TODO: Move this to addBrokerURL
+            Console.WriteLine("Processing message on topic " + pub.Topic + " from " + pub.Publisher + " sequence " + pub.Sequence);
+
             string origin = pub.Publisher;
-            int seq = pub.Sequence;
-
-            Dictionary<int, Message> messages = null;
-            _undeliveredList.TryGetValue(origin, out messages);
-            if (messages == null) {
+            
+            // Create the data structures to manage the messages of the publisher if they don't exist yet
+            if(! _undeliveredList.ContainsKey(origin)) {
                 _undeliveredList.Add(origin, new Dictionary<int, Message>());
-            }
-
-            if (!_lastDelivered.ContainsKey(origin)) {
                 _lastDelivered.Add(origin, -1);
             }
 
-            // No ordering
             if (_ordering == "NO") {
-                Console.WriteLine("Delivering message on topic " + pub.Topic + " from " + pub.Publisher + " sequence " + pub.Sequence);
-                writeToLog("SubEvent " + _processName + ", " + pub.Publisher + ", " + pub.Topic + ", " + eventNumber);
-                eventNumber++;
-
-                _messageHistory.Add(pub);
-                _lastDelivered[origin] = pub.Sequence;
-                return;
+                deliverUnordered(pub);
+            } else if (_ordering == "FIFO") {
+                deliverFifo(pub);
             }
+        }
 
-            // FIFO ordering
-            Console.WriteLine("Processing message on topic " + pub.Topic + " from " + pub.Publisher + " sequence " + pub.Sequence);
+        private void deliverUnordered(Message pub) {
+            string origin = pub.Publisher;
+            Console.WriteLine("Delivering message on topic " + pub.Topic + " from " + pub.Publisher + " sequence " + pub.Sequence);
+            writeToLog("SubEvent " + _processName + ", " + pub.Publisher + ", " + pub.Topic + ", " + eventNumber);
+            eventNumber++;
+
+            _messageHistory.Add(pub);
+            _lastDelivered[origin] = pub.Sequence;
+        }
+
+        private void deliverFifo(Message pub) {
+            string origin = pub.Publisher;
+            int seq = pub.Sequence;
 
             Console.WriteLine("Sequence: " + seq + "\tLast: " + _lastDelivered[origin]);
+
             if (_lastDelivered[origin] == seq - 1) {
-                Console.WriteLine("Delivering message on topic" + pub.Topic + " from " + pub.Publisher + " sequence " + pub.Sequence);
-                writeToLog("SubEvent " + _processName + ", " + pub.Publisher + ", " + pub.Topic + ", " + eventNumber);
+                // Deliver only if it is the next in the sequence
+                Console.WriteLine("Delivering message on topic" + pub.Topic + " from " + origin + " sequence " + seq);
+                writeToLog("SubEvent " + _processName + ", " + origin + ", " + pub.Topic + ", " + eventNumber);
                 eventNumber++;
 
                 _messageHistory.Add(pub);
                 _lastDelivered[origin] = seq;
 
-                while (_undeliveredList[origin].ContainsKey(_lastDelivered[origin] + 1)) {
-                    pub = _undeliveredList[origin][_lastDelivered[origin] + 1];
-                    _undeliveredList[origin].Remove(_lastDelivered[origin] + 1);
+                // Deliver all undelivered messages depending on this one
+                while (_undeliveredList[origin].ContainsKey(seq + 1)) {
+                    seq = _lastDelivered[origin] + 1;
+                    pub = _undeliveredList[origin][seq];
 
+                    _undeliveredList[origin].Remove(seq);
                     _messageHistory.Add(pub);
-
                     _lastDelivered[origin] += 1;
                 }
             } else if (_lastDelivered[origin] > seq) {
+                // Otherwise just store it for future delivery
                 _undeliveredList[origin].Add(pub.Sequence, pub);
             }
         }
