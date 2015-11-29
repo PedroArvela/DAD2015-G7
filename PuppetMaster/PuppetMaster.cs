@@ -181,11 +181,11 @@ namespace PuppetMaster
         public bool processCommand(String command) {
             String sitePatern = "^Site\\s[A-Za-z0-9]+\\sParent\\s[A-Za-z0-9]+$";
             String processPatern = "^Process\\s[A-Za-z0-9]+\\sIs\\s(broker|publisher|subscriber)\\sOn\\s[A-Za-z0-9]+\\sURL\\stcp://((([0-9]+\\.){3}[0-9])|localhost):[0-9]{3,}/[A-Za-z]+$";
-            String routingPatern = "^RoutingPolicy\\s(flooding|filter)$";
+            String routingPatern = "^RoutingPolicy\\s(flood|filter|flooding|filtering)$";
             String orderingPatern = "^Ordering\\s(NO|FIFO|TOTAL)$";
-            String subPatern = "^Subscriber\\s[A-Za-z0-9]+\\sSubscribe\\s[A-Za-z0-9/\\*]+$";
-            String unSubPatern = "^Subscriber\\s[A-Za-z0-9]+\\sUnsubscribe\\s[A-Za-z0-9/\\*]+$";
-            String publisherPatern = "^Publisher\\s[A-Za-z0-9]+\\sPublish\\s[0-9]+\\sOnTopic\\s[A-Za-z0-9/]+\\sInterval\\s[0-9]+$";
+            String subPatern = "^Subscriber\\s[A-Za-z0-9]+\\sSubscribe\\s[A-Za-z0-9/\\*-]+$";
+            String unSubPatern = "^Subscriber\\s[A-Za-z0-9]+\\sUnsubscribe\\s[A-Za-z0-9/\\*-]+$";
+            String publisherPatern = "^Publisher\\s[A-Za-z0-9]+\\sPublish\\s[0-9]+\\sOnTopic\\s[A-Za-z0-9/-]+\\sInterval\\s[0-9]+$";
             String statusPatern = "^Status$";
             String carshPatern = "^Crash\\s[A-Za-z0-9]+$";
             String freezePatern = "^Freeze\\s[A-Za-z0-9]+$";
@@ -200,37 +200,37 @@ namespace PuppetMaster
             String startProcess = "^Start\\s(broker|subscriber|publisher)\\s[A-Za-z0-9]+$";
             String showPatern = "^Show$";
             String showNodePatern = "^ShowNode\\s(broker|subscriber|publisher)\\s[A-Za-z0-9]+$";
-            String SpawnPublicationPatern = "^SpawnPublication\\s[A-Za-z0-9]+\\s[A-Za-z0-9/]+\\s[0-9]+$";
-            String addTopicPatern = "^AddTopic\\s[A-Za-z0-9]+\\s[A-Za-z0-9]+\\s[A-Za-z0-9/]+$";
+            String SpawnPublicationPatern = "^SpawnPublication\\s[A-Za-z0-9]+\\s[A-Za-z0-9/-]+\\s[0-9]+$";
+            String addTopicPatern = "^AddTopic\\s[A-Za-z0-9]+\\s[A-Za-z0-9]+\\s[A-Za-z0-9/-]+$";
             String quitPatern = "^Quit|Exit$";
 
             List<Regex> regs = new List<Regex>();
             Match m;
             ArrayList parse = new ArrayList();
 
-            regs.Add(new Regex(sitePatern, RegexOptions.None));
-            regs.Add(new Regex(processPatern, RegexOptions.None));
-            regs.Add(new Regex(routingPatern, RegexOptions.None));
-            regs.Add(new Regex(orderingPatern, RegexOptions.None));
-            regs.Add(new Regex(subPatern, RegexOptions.None));
-            regs.Add(new Regex(unSubPatern, RegexOptions.None));
-            regs.Add(new Regex(publisherPatern, RegexOptions.None));
-            regs.Add(new Regex(statusPatern, RegexOptions.None));
-            regs.Add(new Regex(carshPatern, RegexOptions.None));
-            regs.Add(new Regex(freezePatern, RegexOptions.None));
-            regs.Add(new Regex(unfreezePatern, RegexOptions.None));
-            regs.Add(new Regex(waitPatern, RegexOptions.None));
-            regs.Add(new Regex(loggingPatern, RegexOptions.None));
-            regs.Add(new Regex(showPatern, RegexOptions.None));
-            regs.Add(new Regex(showNodePatern, RegexOptions.None));
-            regs.Add(new Regex(importFile, RegexOptions.None));
-            regs.Add(new Regex(importScript, RegexOptions.None));
-            regs.Add(new Regex(changeLogPath, RegexOptions.None));
-            regs.Add(new Regex(startNetwork, RegexOptions.None));
-            regs.Add(new Regex(startProcess, RegexOptions.None));
-            regs.Add(new Regex(SpawnPublicationPatern, RegexOptions.None));
-            regs.Add(new Regex(addTopicPatern, RegexOptions.None));
-            regs.Add(new Regex(quitPatern, RegexOptions.None));
+            regs.Add(new Regex(sitePatern, RegexOptions.IgnoreCase));
+            regs.Add(new Regex(processPatern, RegexOptions.IgnoreCase));
+            regs.Add(new Regex(routingPatern, RegexOptions.IgnoreCase));
+            regs.Add(new Regex(orderingPatern, RegexOptions.IgnoreCase));
+            regs.Add(new Regex(subPatern, RegexOptions.IgnoreCase));
+            regs.Add(new Regex(unSubPatern, RegexOptions.IgnoreCase));
+            regs.Add(new Regex(publisherPatern, RegexOptions.IgnoreCase));
+            regs.Add(new Regex(statusPatern, RegexOptions.IgnoreCase));
+            regs.Add(new Regex(carshPatern, RegexOptions.IgnoreCase));
+            regs.Add(new Regex(freezePatern, RegexOptions.IgnoreCase));
+            regs.Add(new Regex(unfreezePatern, RegexOptions.IgnoreCase));
+            regs.Add(new Regex(waitPatern, RegexOptions.IgnoreCase));
+            regs.Add(new Regex(loggingPatern, RegexOptions.IgnoreCase));
+            regs.Add(new Regex(showPatern, RegexOptions.IgnoreCase));
+            regs.Add(new Regex(showNodePatern, RegexOptions.IgnoreCase));
+            regs.Add(new Regex(importFile, RegexOptions.IgnoreCase));
+            regs.Add(new Regex(importScript, RegexOptions.IgnoreCase));
+            regs.Add(new Regex(changeLogPath, RegexOptions.IgnoreCase));
+            regs.Add(new Regex(startNetwork, RegexOptions.IgnoreCase));
+            regs.Add(new Regex(startProcess, RegexOptions.IgnoreCase));
+            regs.Add(new Regex(SpawnPublicationPatern, RegexOptions.IgnoreCase));
+            regs.Add(new Regex(addTopicPatern, RegexOptions.IgnoreCase));
+            regs.Add(new Regex(quitPatern, RegexOptions.IgnoreCase));
 
             foreach (Regex r in regs) {
                 //Console.WriteLine("Atempting rule: " + r.ToString());
@@ -548,7 +548,7 @@ namespace PuppetMaster
 
         public void changeRoutingLevel(string level) {
             bool policy = true;
-            if (level.Equals("flooding")) {
+            if (level == "flood" || level == "flooding") {
                 policy = false; 
             }
 
