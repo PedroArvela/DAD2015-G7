@@ -6,6 +6,7 @@ using System.Runtime.Remoting;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Subscriber {
@@ -31,6 +32,7 @@ namespace Subscriber {
 
             while (true) {
                 s.processQueue();
+                Thread.Sleep(1000);
             }
         }
     }

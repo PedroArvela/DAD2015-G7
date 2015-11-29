@@ -7,6 +7,7 @@ using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
 using System.Text;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace Publisher {
     class PublisherProgram {
@@ -29,7 +30,7 @@ namespace Publisher {
             p.publishToPuppetMaster();
             
             while (true) {
-                //do nothing
+                Thread.Sleep(1000);
             }
         }
     }
