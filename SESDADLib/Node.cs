@@ -36,6 +36,8 @@ namespace SESDADLib {
             _connections = new Dictionary<string, INode>();
         }
 
+        public string Url() { return getProcessURL(); }
+
         public string getProcessName() { return _processName; }
         public string getProcessURL() { return _processURL; }
         public string getSite() { return _site; }

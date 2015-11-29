@@ -5,26 +5,27 @@ using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
 using SESDADLib;
 using Subscriber;
-
+using System.Linq;
 
 namespace Broker {
     public class Broker : Node, INode {
         private bool _routingPolicy;
-        private Queue<Message> _queue;
+        private Queue<Message> _queue = new Queue<Message>();
         private Object _queueLock = new Object();
 
-        private Dictionary<string, List<string>> _subscribersTopics = new Dictionary<string, List<string>>(); //key == topic, value == #interestedURL's
-        private List<string> _subscribers = new List<string>();
-        private List<string> _parentProcessesURL = new List<string>();
-        private List<string> _childProcessesURL = new List<string>();
+        // Key: Topic, Value: Nodes
+        private Dictionary<string, Dictionary<string, INode>> topicSubscribers = new Dictionary<string, Dictionary<string, INode>>();
+
+        // Key: URL, Value: Node
+        private Dictionary<string, INode> subscribers = new Dictionary<string, INode>();
+        private Dictionary<string, INode> children = new Dictionary<string, INode>();
+        private Tuple<string, INode> parent;
 
         private bool _delayed = false;
         private int _delayTime = 0;
 
         public Broker(string processName, string processURL, string site, string routingtype, string puppetMasterURL, string loggingLevel) : base(processName, processURL, site, puppetMasterURL) {
             _puppetMasterURL = puppetMasterURL;
-            _queue = new Queue<Message>();
-            _subscribersTopics = new Dictionary<string, List<string>>();
             switch (routingtype) {
                 case "flooding":
                     _routingPolicy = false;
@@ -38,20 +39,21 @@ namespace Broker {
             //process start arguments
             _nodeProcess.StartInfo.FileName = "..\\..\\..\\Broker\\bin\\Debug\\Broker.exe";
         }
-
-        public List<string> getParentURL() { return _parentProcessesURL; }
-        public List<string> getChildURL() { return _childProcessesURL; }
-        public List<string> getSubURL() { return _subscribers; }
+        
+        public string getParentURL() { return parent.Item1; }
 
         public void addSubscriberUrl(string url) {
-            _subscribers.Add(url);
+            INode node = aquireConnection(url);
+            subscribers.Add(url, node);
         }
 
         public void addChildUrl(string url) {
-            _childProcessesURL.Add(url);
+            INode node = aquireConnection(url);
+            children.Add(url, node);
         }
         public void addParentUrl(string url) {
-            _parentProcessesURL.Add(url);
+            INode node = aquireConnection(url);
+            parent = new Tuple<string, INode>(url, node);
         }
 
         public bool toggleNode() {
@@ -73,22 +75,21 @@ namespace Broker {
                 print += "\tRouting Policy: flooding\n";
             }
             print += "\tParent Broker URL(s):\n";
-            foreach (string purl in _parentProcessesURL) {
-                print += "\t\t" + purl + "\n";
-            }
+            print += "\t\t" + parent.Item1 + "\n";
+
             print += "\tChild Broker URL(s):\n";
-            foreach (string curl in _childProcessesURL) {
+            foreach (string curl in children.Keys) {
                 print += "\t\t" + curl + "\n";
             }
             print += "\tTopic(s):\n";
-            foreach (string topic in _subscribersTopics.Keys) {
+            foreach (string topic in topicSubscribers.Keys) {
                 print += "\t\t" + topic + " has the following interested urls:\n";
-                foreach(string url in _subscribersTopics[topic]) {
+                foreach (string url in topicSubscribers[topic].Keys) {
                     print += "\t\t\t" + url + "\n";
                 }
             }
             print += "\tSubscriber(s):\n";
-            foreach(string subscriber in _subscribers) {
+            foreach (string subscriber in subscribers.Keys) {
                 print += "\t\t" + subscriber + "\n";
             }
             return print;
@@ -97,43 +98,51 @@ namespace Broker {
         private void removeTopic(string topic, string interestedURL) {
             Console.WriteLine("Removing from interest list...");
 
-            if (_subscribersTopics[topic] == null) {
+            if (!topicSubscribers.ContainsKey(topic)) {
                 Console.WriteLine("No topic matching " + topic + " found");
                 return;
-            } else {
-                _subscribersTopics[topic].Remove(interestedURL);
-                Console.WriteLine("Removed from topic " + topic + " intereste url " + interestedURL);
             }
-            if (_subscribersTopics[topic].Count == 0) {
+
+            topicSubscribers[topic].Remove(interestedURL);
+            Console.WriteLine("Removed from topic " + topic + " intereste url " + interestedURL);
+
+            if (topicSubscribers[topic].Count == 0) {
                 Console.WriteLine("Topic no longer has any interested url");
-                _subscribersTopics.Remove(topic);
+                topicSubscribers.Remove(topic);
             }
         }
 
         public void addTopic(string topic, string interestedURL) {
-            List<string> interest = null;
             bool found = false;
+            INode node;
+
+            // Get the interested node from the URL
+            if (interestedURL == parent.Item1) {
+                node = parent.Item2;
+            } else if (subscribers.ContainsKey(interestedURL)) {
+                node = subscribers[interestedURL];
+            } else {
+                node = children[interestedURL];
+            }
 
             Console.WriteLine("Adding to interest List...");
-            _subscribersTopics.TryGetValue(topic, out interest);
-            if (interest == null ) {
+            if (!topicSubscribers.ContainsKey(topic)) {
+
                 Console.WriteLine("New topic " + interestedURL + " added with interested url " + interestedURL);
-                interest = new List<string>();
-                interest.Add(interestedURL);
-                _subscribersTopics.Add(topic, interest);
+                topicSubscribers.Add(topic, new Dictionary<string, INode>());
             } else {
-                interest = _subscribersTopics[topic];
-                foreach (string url in interest) {
-                    if (interestedURL.Equals(url)) {
+                foreach (var sub in topicSubscribers[topic]) {
+                    if (interestedURL.Equals(sub.Key)) {
                         Console.WriteLine("URL already on interest list");
                         found = true;
                         break;
                     }
                 }
-                if (!found) {
-                    Console.WriteLine("URL: " + interestedURL + " added to topic " + topic);
-                    interest.Add(interestedURL);
-                }
+            }
+
+            if (!found) {
+                Console.WriteLine("URL: " + interestedURL + " added to topic " + topic);
+                topicSubscribers[topic].Add(interestedURL, node);
             }
         }
 
@@ -144,62 +153,56 @@ namespace Broker {
         }
 
         public void sendPublication(Message pub) {
-            INode target = null;
-            List<string> targetURL = new List<string>();
+            List<INode> targets = new List<INode>();
 
-            
             if (!_routingPolicy) {
                 Console.WriteLine("Sending Message in Flood Mode...");
-                foreach (string url in _childProcessesURL) {
-                    if (!url.Equals(pub.originURL)) {
-                        targetURL.Add(url);
-                    }
+
+                if (parent.Item1 != pub.originURL) {
+                    targets.Add(parent.Item2);
                 }
-                foreach (string url in _parentProcessesURL) {
-                    if (!url.Equals(pub.originURL)) {
-                        targetURL.Add(url);
-                    }
-                }
-                foreach (string url in _subscribers) {
-                    if (!url.Equals(pub.originURL)) {
-                        targetURL.Add(url);
+
+                foreach (var node in children) {
+                    if (node.Key != pub.originURL) {
+                        targets.Add(node.Value);
                     }
                 }
 
-                //flood all available brokers
-                pub.originURL = _processURL;
-                foreach (string url in targetURL) {
-                    target = this.aquireConnection(url);
-                    target.addToQueue(pub);
-                    if (_loggingLevel.Equals("full"))
-                        this.writeToLog("BroEvent " + _processName + ", " + pub.Publisher + ", " + pub.Topic + ", " + pub.Sequence);
-                    Console.WriteLine("Publication sent to: " + url);
+                foreach (var node in subscribers) {
+                    if (node.Key != pub.originURL) {
+                        targets.Add(node.Value);
+                    }
                 }
 
             } else {
                 Console.WriteLine("Sending message in Filter Mode...");
-                foreach (string interestedTopic in _subscribersTopics.Keys) {
+
+                foreach (string interestedTopic in topicSubscribers.Keys) {
                     Console.WriteLine("testing... " + interestedTopic + " matches " + pub.Topic);
                     if (this.compatibleTopics(interestedTopic, pub.Topic)) {
-                        foreach (string interestedURL in _subscribersTopics[interestedTopic]) {
-                            //FIX-ME: possible redundant code
-                            if (_subscribers.Contains(interestedURL)) {
-                                target = this.aquireConnection(interestedURL);
-                                target.addToQueue(pub);
-                            } else {
-                                target = this.aquireConnection(interestedURL);
-                                target.addToQueue(pub);
-                            }
-                            if(_loggingLevel.Equals("full"))
-                                this.writeToLog("BroEvent " + _processName + ", " + pub.Publisher + ", " + pub.Topic + ", " + pub.Sequence);
+                        foreach (INode node in topicSubscribers[interestedTopic].Values) {
+                            targets.Add(node);
                         }
-                        break;
                     }
-                }        
+                }
+            }
+
+            // Send the message to all the selected nodes
+            pub.originURL = _processURL;
+            foreach (INode node in targets) {
+                node.addToQueue(pub);
+
+                if (_loggingLevel.Equals("full"))
+                    this.writeToLog("BroEvent " + _processName + ", " + pub.Publisher + ", " + pub.Topic + ", " + pub.Sequence);
+
+                Console.WriteLine("Publication sent to: " + node.Url());
             }
         }
 
         private bool compatibleTopics(string topic, string test) {
+            // This code scares me. 5 or more levels of chained ifs or loops
+            // are not a good sign under any circumstances -- Arvela
+
             string[] masterTopic = topic.Split('/');
             string[] testTopic = test.Split('/');
             int masterTopicSize = masterTopic.Length;
@@ -254,47 +257,52 @@ namespace Broker {
         }
 
         private void shareSubRequest(string topic, string origin, Message request) {
-            List<string> shareList = new List<string>();
-            List<string> topicURL = null;
-            INode target = null;
-
-            foreach (String url in _parentProcessesURL) {
-                if (!url.Equals(origin)) { shareList.Add(url); }
-            }
-            foreach (String url in _childProcessesURL) {
-                if (!url.Equals(origin)) { shareList.Add(url); }
-            }
+            List<INode> shareList = new List<INode>();
 
             if (request.SubType.Equals(MessageType.Subscribe)) {
-                _subscribersTopics.TryGetValue(topic, out topicURL);
-                if (topicURL == null) {
-                    topicURL = new List<string>();
-                    topicURL.Add(origin);
-                    _subscribersTopics.Add(topic, topicURL);
+                INode node;
+                if (parent.Item1 == origin) {
+                    node = parent.Item2;
                 } else {
-                    if (!_subscribersTopics[topic].Contains(origin)) {
-                        _subscribersTopics[topic].Add(origin);
-                    } else {
-                        Console.WriteLine(origin + " is already flaged as interested on " + topic);
-                        return;
-                    }
+                    node = children[origin];
                 }
-            }
-            else if (request.SubType.Equals(MessageType.Unsubscribe)) {
-                _subscribersTopics.TryGetValue(topic, out topicURL);
-                if (topicURL == null) {
-                    Console.WriteLine("Non-Existant Topic, cannont unsubscribe...");
+
+                if (!topicSubscribers.ContainsKey(topic)) {
+                    topicSubscribers.Add(topic, new Dictionary<string, INode>());
+                }
+
+                if (topicSubscribers[topic].ContainsKey(origin)) {
+                    Console.WriteLine(origin + " is already flaged as interested on " + topic);
                     return;
-                } else {
-                    _subscribersTopics[topic].Remove(origin);
+                }
+
+                topicSubscribers[topic].Add(origin, node);
+            } else if (request.SubType.Equals(MessageType.Unsubscribe)) {
+                if (!topicSubscribers.ContainsKey(topic)) {
+                    Console.WriteLine("Nonexistent Topic, cannont unsubscribe...");
+                    return;
+                }
+
+                topicSubscribers[topic].Remove(topic);
+
+                if (topicSubscribers[topic].Count == 0) {
+                    topicSubscribers.Remove(topic);
                 }
             }
 
             //share request
+            if (parent.Item1 != origin) {
+                shareList.Add(parent.Item2);
+            }
+            foreach (var node in children) {
+                if (node.Key != origin) {
+                    shareList.Add(node.Value);
+                }
+            }
+
             request.originURL = _processURL;
-            foreach (string url in shareList) {
-                target = this.aquireConnection(url);
-                target.addToQueue(request);
+            foreach (INode node in shareList) {
+                node.addToQueue(request);
             }
         }
 
@@ -307,7 +315,6 @@ namespace Broker {
                     if (pub.SubType.Equals(MessageType.Subscribe) || pub.SubType.Equals(MessageType.Unsubscribe)) {
                         Console.WriteLine(pub.SubType.ToString() + " request for topic " + pub.Topic);
                         this.shareSubRequest(pub.Topic, pub.originURL, pub);
-                        
                     } else {
                         this.sendPublication(pub);
                     }
@@ -342,13 +349,12 @@ namespace Broker {
                 arguments += "flooding" + " " + _puppetMasterURL + " " + _loggingLevel;
             }
 
-            foreach (string parent in _parentProcessesURL) {
-                arguments += " -p " + parent;
-            }
-            foreach (string child in _childProcessesURL) {
+            arguments += " -p " + parent.Item1;
+
+            foreach (string child in children.Keys) {
                 arguments += " -c " + child;
             }
-            foreach (string sub in _subscribers) {
+            foreach (string sub in subscribers.Keys) {
                 arguments += " -s " + sub;
             }
             return arguments;

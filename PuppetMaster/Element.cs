@@ -35,12 +35,8 @@ namespace Element
             List<string> answer = new List<string>();
             List<Broker.Broker> parentBrokers = _parent.getBrokers();
 
-            foreach (Broker.Broker b in parentBrokers)
-            {
-                foreach (String url in b.getParentURL())
-                {
-                    answer.Add(url);
-                }
+            foreach (Broker.Broker b in parentBrokers) {
+                answer.Add(b.getParentURL());
             }
             return answer;
         }
