@@ -39,8 +39,14 @@ namespace Broker {
             //process start arguments
             _nodeProcess.StartInfo.FileName = "..\\..\\..\\Broker\\bin\\Debug\\Broker.exe";
         }
-        
-        public string getParentURL() { return parent.Item1; }
+
+        public string getParentURL() {
+            if (parent != null) {
+                return parent.Item1;
+            } else {
+                return "";
+            }
+        }
 
         public void addSubscriberUrl(string url) {
             INode node = aquireConnection(url);
@@ -75,7 +81,9 @@ namespace Broker {
                 print += "\tRouting Policy: flooding\n";
             }
             print += "\tParent Broker URL(s):\n";
-            print += "\t\t" + parent.Item1 + "\n";
+            if(parent != null) {
+                print += "\t\t" + parent.Item1 + "\n";
+            }
 
             print += "\tChild Broker URL(s):\n";
             foreach (string curl in children.Keys) {
@@ -117,7 +125,7 @@ namespace Broker {
             INode node;
 
             // Get the interested node from the URL
-            if (interestedURL == parent.Item1) {
+            if (parent != null && interestedURL == parent.Item1) {
                 node = parent.Item2;
             } else if (subscribers.ContainsKey(interestedURL)) {
                 node = subscribers[interestedURL];
@@ -158,7 +166,7 @@ namespace Broker {
             if (!_routingPolicy) {
                 Console.WriteLine("Sending Message in Flood Mode...");
 
-                if (parent.Item1 != pub.originURL) {
+                if (parent != null && parent.Item1 != pub.originURL) {
                     targets.Add(parent.Item2);
                 }
 
@@ -261,10 +269,12 @@ namespace Broker {
 
             if (request.SubType.Equals(MessageType.Subscribe)) {
                 INode node;
-                if (parent.Item1 == origin) {
+                if (parent != null && parent.Item1 == origin) {
                     node = parent.Item2;
-                } else {
+                } else if (children.Keys.Contains(origin)) {
                     node = children[origin];
+                } else {
+                    node = subscribers[origin];
                 }
 
                 if (!topicSubscribers.ContainsKey(topic)) {
@@ -291,7 +301,7 @@ namespace Broker {
             }
 
             //share request
-            if (parent.Item1 != origin) {
+            if (parent != null && parent.Item1 != origin) {
                 shareList.Add(parent.Item2);
             }
             foreach (var node in children) {
@@ -331,7 +341,8 @@ namespace Broker {
             Console.WriteLine("Publishing on port: " + port.ToString() + " with uri: " + uri);
 
             TcpChannel channel = new TcpChannel(port);
-            ChannelServices.RegisterChannel(channel, false);
+            //Channel is already registered by PuppetMaster
+            //ChannelServices.RegisterChannel(channel, false);
 
             RemotingServices.Marshal(this, uri, typeof(Broker));
         }
@@ -349,7 +360,9 @@ namespace Broker {
                 arguments += "flooding" + " " + _puppetMasterURL + " " + _loggingLevel;
             }
 
-            arguments += " -p " + parent.Item1;
+            if (parent != null) {
+                arguments += " -p " + parent.Item1;
+            }
 
             foreach (string child in children.Keys) {
                 arguments += " -c " + child;

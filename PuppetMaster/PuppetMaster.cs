@@ -53,6 +53,8 @@ namespace PuppetMaster
             _subscribers = new List<Subscriber.Subscriber>();
 
             logFilePipe = new StreamWriter(logFile);
+
+            this.announcePuppetMaster();
         }
 
         public PuppetMaster(string processURL, String configFilePath) {
@@ -452,8 +454,6 @@ namespace PuppetMaster
         }
 
         private void startNetwork() {
-            this.announcePuppetMaster();
-
             foreach (Broker.Broker b in _brokers) {
                 startProcess("broker", b.getProcessName());
             }
