@@ -1,12 +1,4 @@
-﻿using SESDADLib;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.Remoting;
-using System.Runtime.Remoting.Channels;
-using System.Runtime.Remoting.Channels.Tcp;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 using System.Threading;
 
 namespace Publisher {
@@ -28,7 +20,7 @@ namespace Publisher {
                 p.addBrokerURL(brokers[i]);
             }
             p.publishToPuppetMaster();
-            
+
             while (true) {
                 Thread.Sleep(1000);
             }

@@ -67,9 +67,9 @@ namespace Subscriber {
             Console.WriteLine("Processing message on topic " + pub.Topic + " from " + pub.Publisher + " sequence " + pub.Sequence);
 
             string origin = pub.Publisher;
-            
+
             // Create the data structures to manage the messages of the publisher if they don't exist yet
-            if(! _undeliveredList.ContainsKey(origin)) {
+            if (!_undeliveredList.ContainsKey(origin)) {
                 _undeliveredList.Add(origin, new Dictionary<int, Message>());
                 _lastDelivered.Add(origin, -1);
             }
@@ -125,12 +125,11 @@ namespace Subscriber {
             INode broker = null;
             Message request = null;
 
-            foreach (string brokerURL in _siteBrokerUrl)
-            {
+            foreach (string brokerURL in _siteBrokerUrl) {
                 broker = this.aquireConnection(brokerURL);
                 if (broker == null) {
                     Console.WriteLine("Could not connect to broker: " + brokerURL);
-                } else if(_subscriptionTopics.Contains(topic)) {
+                } else if (_subscriptionTopics.Contains(topic)) {
                     Console.WriteLine("Topic already Subscribed to...");
                 } else {
                     Console.WriteLine("Sending subscription request to: " + brokerURL);
@@ -149,8 +148,7 @@ namespace Subscriber {
             INode broker = null;
             Message request = null;
 
-            foreach (string brokerURL in _siteBrokerUrl)
-            {
+            foreach (string brokerURL in _siteBrokerUrl) {
                 broker = this.aquireConnection(brokerURL);
                 if (broker == null) {
                     Console.WriteLine("Could not connect to broker: " + brokerURL);
@@ -200,7 +198,7 @@ namespace Subscriber {
         protected override string getArguments() {
             //processNAme processURL site puppetMAsterURL ordering -b brokerURL
             string text = _processName + " " + _processURL + " " + _site + " " + _puppetMasterURL + " " + _ordering;
-            foreach(string broker in _siteBrokerUrl) {
+            foreach (string broker in _siteBrokerUrl) {
                 text += " -b " + broker;
             }
             return text;

@@ -1,11 +1,9 @@
-﻿using System;
+﻿using SESDADLib;
+using System;
 using System.Collections.Generic;
-using System.Runtime.Remoting;
-using System.Runtime.Remoting.Channels;
-using System.Runtime.Remoting.Channels.Tcp;
-using SESDADLib;
-using Subscriber;
 using System.Linq;
+using System.Runtime.Remoting;
+using System.Runtime.Remoting.Channels.Tcp;
 
 namespace Broker {
     public class Broker : Node, INode {
@@ -81,7 +79,7 @@ namespace Broker {
                 print += "\tRouting Policy: flooding\n";
             }
             print += "\tParent Broker URL(s):\n";
-            if(parent != null) {
+            if (parent != null) {
                 print += "\t\t" + parent.Item1 + "\n";
             }
 

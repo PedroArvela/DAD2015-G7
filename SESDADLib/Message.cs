@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SESDADLib {
     public enum MessageType {
@@ -33,7 +29,7 @@ namespace SESDADLib {
         }
 
         public override string ToString() {
-            string textOutput = "[ " + Timestamp.ToString("dd/MM/yyyy - HH:mm:ss") + " | "+ Sequence + " ] - " +  SubType.ToString() + " of content \"" + Content + "\" with topic " + Topic;
+            string textOutput = "[ " + Timestamp.ToString("dd/MM/yyyy - HH:mm:ss") + " | " + Sequence + " ] - " + SubType.ToString() + " of content \"" + Content + "\" with topic " + Topic;
             return textOutput;
         }
     }

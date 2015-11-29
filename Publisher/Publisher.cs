@@ -1,13 +1,13 @@
 ﻿using SESDADLib;
 using System;
-using System.Threading;
 using System.Collections.Generic;
 using System.Runtime.Remoting;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
+using System.Threading;
 
-namespace Publisher{
-    public class Publisher : Node{   
+namespace Publisher {
+    public class Publisher : Node {
         private List<string> _siteBrokerUrl;
         private List<string> _topics;
         private List<Message> _pubHistory;

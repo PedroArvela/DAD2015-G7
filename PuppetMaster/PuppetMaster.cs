@@ -1,19 +1,16 @@
-﻿using System;
+﻿using Element;
+using SESDADLib;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using System.Text.RegularExpressions;
-using Element;
-using SESDADLib;
 using System.Linq;
 using System.Runtime.Remoting;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
-using System.Text;
-using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 
-namespace PuppetMaster
-{
+namespace PuppetMaster {
     public class PuppetMaster : MarshalByRefObject, IPuppetMaster {
 
         private List<Broker.Broker> _brokers;
@@ -113,7 +110,7 @@ namespace PuppetMaster
                 //writeToLog(site + " created - parent site: " + parentSite);
             }
         }
-        
+
         public void runCommandOnNode(string nodeName, string comand) {
             throw new NotImplementedException();
         }
@@ -169,11 +166,10 @@ namespace PuppetMaster
                     }
                     break;
             }
-            
+
             if (fail) {
                 Console.WriteLine("Could not extablish Proxy to " + target.getProcessURL());
-            }
-            else {
+            } else {
                 Console.WriteLine("Established Proxy to: " + target.getProcessURL());
             }
         }
@@ -241,7 +237,7 @@ namespace PuppetMaster
                     break;
                 }
             }
-            
+
             string[] parsed = Array.ConvertAll<object, string>(parse.ToArray(), System.Convert.ToString);
             if (parse.Count > 0) {
                 switch (parsed[0]) {
@@ -327,8 +323,7 @@ namespace PuppetMaster
                         wipeNetwork();
                         return false;
                 }
-            }
-            else {
+            } else {
                 Console.Write("Command: \"" + command + "\"" + " is not a recognized command...\n");
             }
             return true;
@@ -353,8 +348,7 @@ namespace PuppetMaster
             String inString;
             this.wipeNetwork();
 
-            while ((inString = configStream.ReadLine()) != null)
-            {
+            while ((inString = configStream.ReadLine()) != null) {
                 if (inString.Equals("---EOC---")) {
                     configStream.Close();
                     return;
@@ -409,7 +403,7 @@ namespace PuppetMaster
                             b = new Broker.Broker(processName, Url, Site, "flooding", this._masterURL, _loggingLevel);
                         }
                         if (targetSite.getParent() != null) {
-                            foreach(string url in targetSite.getParent().getBrokerUrls()) {
+                            foreach (string url in targetSite.getParent().getBrokerUrls()) {
                                 b.addParentUrl(url);
                             }
                             foreach (Broker.Broker parentBroker in targetSite.getParent().getBrokers()) {
@@ -549,7 +543,7 @@ namespace PuppetMaster
         public void changeRoutingLevel(string level) {
             bool policy = true;
             if (level == "flood" || level == "flooding") {
-                policy = false; 
+                policy = false;
             }
 
             _routingPolicy = policy;
@@ -703,7 +697,7 @@ namespace PuppetMaster
         public void changeLoggingLevel(String level) {
             Console.WriteLine("Logging Request: " + level);
             _loggingLevel = level;
-            foreach(Broker.Broker b in _brokers) {
+            foreach (Broker.Broker b in _brokers) {
                 b.setLoggingLevel(level);
                 if (b.getExecuting()) {
                     this.connectToNode("broker", b.getProcessName());

@@ -1,12 +1,7 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace Element
-{
+namespace Element {
     public class element {
         private string _site;
         private List<Broker.Broker> _brokers = new List<Broker.Broker>();
@@ -16,8 +11,7 @@ namespace Element
         private element _parent;
         private List<element> _childs = new List<element>();
 
-        public element(String siteURL, element parent)
-        {
+        public element(String siteURL, element parent) {
             _site = siteURL;
             _parent = parent;
         }
@@ -30,8 +24,7 @@ namespace Element
         public element getParent() { return _parent; }
         public List<element> getChilds() { return _childs; }
 
-        public List<string> getParentUrls()
-        {
+        public List<string> getParentUrls() {
             List<string> answer = new List<string>();
             List<Broker.Broker> parentBrokers = _parent.getBrokers();
 
@@ -61,7 +54,7 @@ namespace Element
 
         public string showElement() {
             string print = "----" + _site + "----\n";
-                        
+
             if (_parent == null) {
                 print += "\tParent: none\n";
             } else {
@@ -75,7 +68,7 @@ namespace Element
                 print += b.showNode();
             }
             print += "---Publishers---\n";
-            foreach (Publisher.Publisher p in _publishers){
+            foreach (Publisher.Publisher p in _publishers) {
                 print += p.showNode();
             }
             print += "---Subscribers---\n";

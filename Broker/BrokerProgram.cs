@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace Broker {
     class BrokerProgram {
@@ -22,7 +18,7 @@ namespace Broker {
             List<string> parentList = new List<string>();
             List<string> subList = new List<string>();
 
-            for (int i = 6; i < args.Length; i+=2) {
+            for (int i = 6; i < args.Length; i += 2) {
                 switch (args[i]) {
                     case "-p":
                         parentList.Add(args[i + 1]);
