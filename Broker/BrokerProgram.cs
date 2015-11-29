@@ -48,7 +48,7 @@ namespace Broker {
             //Broker program Logic
             while (true) {
                 b.processQueue();
-                Thread.Sleep(1000);
+                Thread.Sleep(50);
             }
         }
     }

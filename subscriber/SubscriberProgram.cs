@@ -24,7 +24,7 @@ namespace Subscriber {
 
             while (true) {
                 s.processQueue();
-                Thread.Sleep(1000);
+                Thread.Sleep(50);
             }
         }
     }

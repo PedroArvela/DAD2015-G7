@@ -15,7 +15,8 @@ namespace Subscriber {
         private Queue<Message> _queueMessages;
         private Dictionary<string, Dictionary<int, Message>> _undeliveredList; // key: pubURI, value: undeliveredList
         private List<Message> _messageHistory;
-        private List<string> _siteBrokerUrl;
+        private string siteBrokerUrl = "";
+        private INode siteBroker;
         private object _queueLock = new object();
 
         public Subscriber(string processName, string processURL, string site, string puppetMasterURL, string ordering) : base(processName, processURL, site, puppetMasterURL) {
@@ -24,7 +25,6 @@ namespace Subscriber {
             _queueMessages = new Queue<Message>();
             _undeliveredList = new Dictionary<string, Dictionary<int, Message>>();
             _messageHistory = new List<Message>();
-            _siteBrokerUrl = new List<string>();
             _ordering = ordering;
 
             _nodeProcess.StartInfo.FileName = "..\\..\\..\\Subscriber\\bin\\Debug\\Subscriber.exe";
@@ -43,7 +43,6 @@ namespace Subscriber {
             Console.WriteLine("Subscriber registered on port: " + _port.ToString() + " with uri: " + _uriAddress);
 
             TcpChannel channel = new TcpChannel(_port);
-            ChannelServices.RegisterChannel(channel, false);
 
             RemotingServices.Marshal(this, _uriAddress, typeof(INode));
         }
@@ -122,53 +121,47 @@ namespace Subscriber {
         }
 
         public void subscribe(string topic) {
-            INode broker = null;
             Message request = null;
 
-            foreach (string brokerURL in _siteBrokerUrl) {
-                broker = this.aquireConnection(brokerURL);
-                if (broker == null) {
-                    Console.WriteLine("Could not connect to broker: " + brokerURL);
-                } else if (_subscriptionTopics.Contains(topic)) {
-                    Console.WriteLine("Topic already Subscribed to...");
-                } else {
-                    Console.WriteLine("Sending subscription request to: " + brokerURL);
-                    writeToLog("Subscriber " + _processName + " Subscribe " + topic);
+            if (siteBroker == null) {
+                Console.WriteLine("Could not connect to broker");
+            } else if (_subscriptionTopics.Contains(topic)) {
+                Console.WriteLine("Topic already Subscribed to...");
+            } else {
+                Console.WriteLine("Sending subscription request to: " + siteBrokerUrl);
+                writeToLog("Subscriber " + _processName + " Subscribe " + topic);
 
-                    request = new Message(MessageType.Subscribe, _site, topic, "subscribe", DateTime.Now, sendSequence, _processName);
-                    request.originURL = _processURL;
-                    broker.addToQueue(request);
-                    _subscriptionTopics.Add(topic);
-                    sendSequence++;
-                }
+                request = new Message(MessageType.Subscribe, _site, topic, "subscribe", DateTime.Now, sendSequence, _processName);
+                request.originURL = _processURL;
+                siteBroker.addToQueue(request);
+                _subscriptionTopics.Add(topic);
+                sendSequence++;
             }
         }
 
         public void unsubscribe(string topic) {
-            INode broker = null;
             Message request = null;
 
-            foreach (string brokerURL in _siteBrokerUrl) {
-                broker = this.aquireConnection(brokerURL);
-                if (broker == null) {
-                    Console.WriteLine("Could not connect to broker: " + brokerURL);
-                } else if (!_subscriptionTopics.Contains(topic)) {
-                    Console.WriteLine("Non-existant Topic...");
-                } else {
-                    Console.WriteLine("Sending unsubscription request to: " + brokerURL);
-                    writeToLog("Subscriber " + _processName + " Unsubscribe " + topic);
+            if (siteBroker == null) {
+                Console.WriteLine("Could not connect to broker");
+            } else if (!_subscriptionTopics.Contains(topic)) {
+                Console.WriteLine("Nonexistent Topic...");
+            } else {
+                Console.WriteLine("Sending unsubscription request to: " + siteBrokerUrl);
+                writeToLog("Subscriber " + _processName + " Unsubscribe " + topic);
 
-                    request = new Message(MessageType.Unsubscribe, _site, topic, "unsubscribe", DateTime.Now, sendSequence, _processName);
-                    request.originURL = _processURL;
-                    broker.addToQueue(request);
-                    _subscriptionTopics.Remove(topic);
-                    sendSequence++;
-                }
+                request = new Message(MessageType.Unsubscribe, _site, topic, "unsubscribe", DateTime.Now, sendSequence, _processName);
+                request.originURL = _processURL;
+                siteBroker.addToQueue(request);
+                _subscriptionTopics.Remove(topic);
+                sendSequence++;
             }
         }
 
         public void addBrokerURL(string url) {
-            _siteBrokerUrl.Add(url);
+            INode node = aquireConnection(url);
+            siteBrokerUrl = url;
+            siteBroker = node;
         }
 
         public override void printNode() {
@@ -179,9 +172,9 @@ namespace Subscriber {
             String print = "Subscriber: " + _processName + " for " + _site + " active on " + _processURL + "\n";
             print += "Ordering: " + _ordering + "\n";
             print += "\tConnected on broker:\n";
-            foreach (string broker in _siteBrokerUrl) {
+            if (siteBrokerUrl != "") {
                 print += "\t\t";
-                print += broker;
+                print += siteBrokerUrl;
                 print += "\n";
             }
             print += "\tSubscribed to:\n";
@@ -198,9 +191,11 @@ namespace Subscriber {
         protected override string getArguments() {
             //processNAme processURL site puppetMAsterURL ordering -b brokerURL
             string text = _processName + " " + _processURL + " " + _site + " " + _puppetMasterURL + " " + _ordering;
-            foreach (string broker in _siteBrokerUrl) {
-                text += " -b " + broker;
+
+            if (siteBrokerUrl != "") {
+                text += " -b " + siteBrokerUrl;
             }
+
             return text;
         }
 
@@ -217,7 +212,6 @@ namespace Subscriber {
             Console.WriteLine("\t\tPublishing on port: " + port.ToString() + " with uri: " + uri + "\n");
 
             TcpChannel channel = new TcpChannel(port);
-            ChannelServices.RegisterChannel(channel, false);
 
             RemotingServices.Marshal(this, uri, typeof(Subscriber));
         }

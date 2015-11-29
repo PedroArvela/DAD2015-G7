@@ -8,7 +8,8 @@ using System.Threading;
 
 namespace Publisher {
     public class Publisher : Node {
-        private List<string> _siteBrokerUrl;
+        private string siteBrokerUrl = "";
+        private INode siteBroker;
         private List<string> _topics;
         private List<Message> _pubHistory;
         private Object _publicationLock = new Object();
@@ -16,7 +17,6 @@ namespace Publisher {
         private int _sendSequence;
 
         public Publisher(string processName, string processURL, string site, string puppetMasterURL) : base(processName, processURL, site, puppetMasterURL) {
-            _siteBrokerUrl = new List<string>();
             _topics = new List<string>();
             _pubHistory = new List<Message>();
             _sendSequence = 0;
@@ -25,7 +25,9 @@ namespace Publisher {
         }
 
         public void addBrokerURL(string url) {
-            _siteBrokerUrl.Add(url);
+            INode node = aquireConnection(url);
+            siteBrokerUrl = url;
+            siteBroker = node;
         }
 
         public void addTopic(string topic) {
@@ -41,7 +43,6 @@ namespace Publisher {
         }
 
         private void Publish(string topic, int numberOfEvents, int intervalMS) {
-            INode target = null;
             Message pub = null;
             int sequence = -1;
 
@@ -53,15 +54,13 @@ namespace Publisher {
                     _pubHistory.Add(pub);
                     _sendSequence++;
                 }
-                foreach (string url in _siteBrokerUrl) {
-                    target = this.aquireConnection(url);
-                    if (target == null)
-                        System.Console.WriteLine("Failed to connect to " + url);
+                
+                    if (siteBroker == null)
+                        System.Console.WriteLine("Failed to connect to broker");
                     else {
-                        target.addToQueue(pub);
+                        siteBroker.addToQueue(pub);
                         this.writeToLog("PubEvent" + _processName + ", " + _processURL + ", " + topic + ", " + _sendSequence);
                     }
-                }
                 Thread.Sleep(intervalMS);
             }
         }
@@ -73,8 +72,8 @@ namespace Publisher {
         public override string showNode() {
             string print = "Publisher: " + _processName + " for " + _site + " active on " + _processURL + "\n";
             print += "\tConnected on broker:\n";
-            foreach (string broker in _siteBrokerUrl) {
-                print += "\t\t" + broker + "\n";
+            if (siteBroker != null) {
+                print += "\t\t" + siteBroker.Url() + "\n";
             }
             print += "\tPublication Topics:\n";
             foreach (string topic in _topics) {
@@ -90,8 +89,8 @@ namespace Publisher {
         protected override string getArguments() {
             //processNAme processURL site puppetMAsterURL -b brokerURL
             string text = _processName + " " + _processURL + " " + _site + " " + _puppetMasterURL;
-            foreach (string broker in _siteBrokerUrl) {
-                text += " -b " + broker;
+            if (siteBrokerUrl != "") {
+                text += " -b " + siteBrokerUrl;
             }
             return text;
         }
@@ -109,7 +108,6 @@ namespace Publisher {
             Console.WriteLine("Publishing on port: " + port.ToString() + " with uri: " + uri);
 
             TcpChannel channel = new TcpChannel(port);
-            ChannelServices.RegisterChannel(channel, false);
 
             RemotingServices.Marshal(this, uri, typeof(Publisher));
         }
