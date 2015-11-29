@@ -1,12 +1,4 @@
-Subscriber subscriber0 Subscribe /p000
-Subscriber subscriber1 Subscribe /p000
-Subscriber subscriber3 Subscribe /p000
-Subscriber subscriber3 Subscribe /p001
-Subscriber subscriber4 Subscribe /p000
-Subscriber subscriber5 Subscribe /p000
-Publisher publisher00 Publish 40 OnTopic /p000 Interval 500
-Publisher publisher00 Publish 40 OnTopic /p001 Interval 500
-Wait 10000
-Status
-Wait 10000
-Status
+Import ..\..\tests\config.txt
+StartNetwork
+Subscriber mSub Subscribe /test
+Publisher yPub Publish 1 OnTopic /test Interval 100
