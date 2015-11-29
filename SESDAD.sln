@@ -23,7 +23,12 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{9908D4A3-FF9E-4D94-95CE-D9EA901850C6}"
 	ProjectSection(SolutionItems) = preProject
 		PuppetMaster\tests\config.txt = PuppetMaster\tests\config.txt
+		DAD_Projecto-1516.pdf = DAD_Projecto-1516.pdf
 		PuppetMaster\tests\script.txt = PuppetMaster\tests\script.txt
+		PuppetMaster\tests\T1-commands.txt = PuppetMaster\tests\T1-commands.txt
+		PuppetMaster\tests\T1-config.txt = PuppetMaster\tests\T1-config.txt
+		PuppetMaster\tests\T2-commands.txt = PuppetMaster\tests\T2-commands.txt
+		PuppetMaster\tests\T2-config.txt = PuppetMaster\tests\T2-config.txt
 	EndProjectSection
 EndProject
 Global
