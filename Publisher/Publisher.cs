@@ -12,7 +12,6 @@ namespace Publisher {
         private INode siteBroker;
         private List<string> _topics;
         private List<Message> _pubHistory;
-        private Object _publicationLock = new Object();
         private Object _sendLock = new Object();
         private int _sendSequence;
 
@@ -35,11 +34,9 @@ namespace Publisher {
         }
 
         public void addPublishRequest(string topic, int times, int intervalMS) {
-            lock (_publicationLock) {
                 Console.WriteLine("New publication request");
                 Thread publishTask = new Thread(() => Publish(topic, times, intervalMS));
                 publishTask.Start();
-            }
         }
 
         private void Publish(string topic, int numberOfEvents, int intervalMS) {
@@ -49,19 +46,26 @@ namespace Publisher {
             for (int i = 0; i < numberOfEvents; i++) {
                 lock (_sendLock) {
                     sequence = _sendSequence;
+                    _sendSequence++;
+
+                    Console.WriteLine("Publish event #" + i + " out of " + numberOfEvents + ". Using sequence #" + sequence);
+
                     pub = new Message(MessageType.Publication, _site, topic, "publication", DateTime.Now, sequence, _processName);
                     pub.originURL = _processURL;
                     _pubHistory.Add(pub);
-                    _sendSequence++;
-                }
-                
+
                     if (siteBroker == null)
-                        System.Console.WriteLine("Failed to connect to broker");
+                        Console.WriteLine("Failed to connect to broker");
                     else {
+                        Console.WriteLine("Trying to send sequence #" + sequence);
                         siteBroker.addToQueue(pub);
-                        this.writeToLog("PubEvent" + _processName + ", " + _processURL + ", " + topic + ", " + _sendSequence);
+                        Console.WriteLine("PubEvent " + _processName + ", " + _processURL + ", " + topic + ", " + sequence);
+                        this.writeToLog("PubEvent " + _processName + ", " + _processURL + ", " + topic + ", " + sequence);
                     }
-                Thread.Sleep(intervalMS);
+
+                    Console.WriteLine("Sleeping for " + intervalMS + "ms");
+                    Thread.Sleep(intervalMS);
+                }
             }
         }
 

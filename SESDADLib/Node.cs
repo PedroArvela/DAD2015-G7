@@ -55,6 +55,10 @@ namespace SESDADLib {
 
         public abstract void executeProcess();
 
+        public override object InitializeLifetimeService() {
+            return null;
+        }
+
         protected INode aquireConnection(string url) {
             INode target = null;
 
