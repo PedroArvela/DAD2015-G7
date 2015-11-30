@@ -70,7 +70,7 @@ namespace Subscriber {
             // Create the data structures to manage the messages of the publisher if they don't exist yet
             if (!_undeliveredList.ContainsKey(origin)) {
                 _undeliveredList.Add(origin, new Dictionary<int, Message>());
-                _lastDelivered.Add(origin, -1);
+                _lastDelivered.Add(origin, pub.Sequence - 1);
             }
 
             if (_ordering == "NO") {
