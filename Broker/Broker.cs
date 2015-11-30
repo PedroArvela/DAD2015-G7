@@ -291,7 +291,7 @@ namespace Broker {
                     return;
                 }
 
-                topicSubscribers[topic].Remove(topic);
+                topicSubscribers[topic].Remove(origin);
 
                 if (topicSubscribers[topic].Count == 0) {
                     topicSubscribers.Remove(topic);
