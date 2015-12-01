@@ -1,8 +1,8 @@
 ﻿using SESDADLib;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime.Remoting;
-using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
 
 namespace Subscriber {
@@ -10,21 +10,16 @@ namespace Subscriber {
         private int eventNumber = 0;
         private int sendSequence = 0;
         private string _ordering;
-        private List<string> _subscriptionTopics;
-        private Dictionary<string, int> _lastDelivered; // key: pubURI
-        private Queue<Message> _queueMessages;
-        private Dictionary<string, Dictionary<int, Message>> _undeliveredList; // key: pubURI, value: undeliveredList
-        private List<Message> _messageHistory;
+        private List<string> _subscriptionTopics = new List<string>();
+        private Dictionary<string, int> _lastDelivered = new Dictionary<string, int>(); // key: pubURI
+        private ConcurrentQueue<Message> _queueMessages = new ConcurrentQueue<Message>();
+        private Dictionary<string, Dictionary<int, Message>> _undeliveredList = new Dictionary<string, Dictionary<int, Message>>(); // key: pubURI, value: undeliveredList
+        private List<Message> _messageHistory = new List<Message>();
         private string siteBrokerUrl = "";
         private INode siteBroker;
         private object _queueLock = new object();
 
         public Subscriber(string processName, string processURL, string site, string puppetMasterURL, string ordering) : base(processName, processURL, site, puppetMasterURL) {
-            _subscriptionTopics = new List<string>();
-            _lastDelivered = new Dictionary<string, int>();
-            _queueMessages = new Queue<Message>();
-            _undeliveredList = new Dictionary<string, Dictionary<int, Message>>();
-            _messageHistory = new List<Message>();
             _ordering = ordering;
 
             _nodeProcess.StartInfo.FileName = "..\\..\\..\\Subscriber\\bin\\Debug\\Subscriber.exe";
@@ -48,19 +43,14 @@ namespace Subscriber {
         }
 
         public void addToQueue(Message msg) {
-            lock (_queueLock) {
-                Console.WriteLine("New unordered message on topic " + msg.Topic + " from " + msg.Publisher + " sequence " + msg.Sequence);
-                _queueMessages.Enqueue(msg);
-            }
+            Console.WriteLine("New unordered message on topic " + msg.Topic + " from " + msg.Publisher + " sequence " + msg.Sequence);
+            _queueMessages.Enqueue(msg);
         }
 
         public void processQueue() {
             Message pub;
-            lock (_queueLock) {
-                if (_queueMessages.Count == 0)
-                    return;
-
-                pub = _queueMessages.Dequeue();
+            if (!_queueMessages.TryDequeue(out pub)) {
+                return;
             }
 
             Console.WriteLine("Processing message on topic " + pub.Topic + " from " + pub.Publisher + " sequence " + pub.Sequence);

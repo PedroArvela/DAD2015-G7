@@ -1,5 +1,6 @@
 ﻿using SESDADLib;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Remoting;
@@ -8,8 +9,7 @@ using System.Runtime.Remoting.Channels.Tcp;
 namespace Broker {
     public class Broker : Node, INode {
         private bool _routingPolicy;
-        private Queue<Message> _queue = new Queue<Message>();
-        private Object _queueLock = new Object();
+        private ConcurrentQueue<Message> _queue = new ConcurrentQueue<Message>();
 
         // Key: Topic, Value: Nodes
         private Dictionary<string, Dictionary<string, INode>> topicSubscribers = new Dictionary<string, Dictionary<string, INode>>();
@@ -153,9 +153,8 @@ namespace Broker {
         }
 
         public void addToQueue(Message p) {
-            lock (_queueLock) {
-                _queue.Enqueue(p);
-            }
+            Console.WriteLine("Adding to queue");
+            _queue.Enqueue(p);
         }
 
         public void sendPublication(Message pub) {
@@ -186,8 +185,10 @@ namespace Broker {
                 foreach (string interestedTopic in topicSubscribers.Keys) {
                     Console.WriteLine("testing... " + interestedTopic + " matches " + pub.Topic);
                     if (this.compatibleTopics(interestedTopic, pub.Topic)) {
-                        foreach (INode node in topicSubscribers[interestedTopic].Values) {
-                            targets.Add(node);
+                        foreach (var node in topicSubscribers[interestedTopic]) {
+                            if (node.Key != pub.originURL) {
+                                targets.Add(node.Value);
+                            }
                         }
                     }
                 }
@@ -316,19 +317,15 @@ namespace Broker {
 
         public void processQueue() {
             Message pub = null;
-            if (_queue.Count > 0 && _enabled) {
-                lock (_queueLock) {
-                    pub = _queue.Dequeue();
-                    Console.WriteLine("Processing: " + pub.ToString());
-                    if (pub.SubType.Equals(MessageType.Subscribe) || pub.SubType.Equals(MessageType.Unsubscribe)) {
-                        Console.WriteLine(pub.SubType.ToString() + " request for topic " + pub.Topic);
-                        this.shareSubRequest(pub.Topic, pub.originURL, pub);
-                    } else {
-                        this.sendPublication(pub);
-                    }
-                }
+            if (!_enabled || !_queue.TryDequeue(out pub)) {
+                return;
+            }
+            Console.WriteLine("Processing: " + pub.ToString());
+            if (pub.SubType.Equals(MessageType.Subscribe) || pub.SubType.Equals(MessageType.Unsubscribe)) {
+                Console.WriteLine(pub.SubType.ToString() + " request for topic " + pub.Topic);
+                this.shareSubRequest(pub.Topic, pub.originURL, pub);
             } else {
-                //nothing to do
+                this.sendPublication(pub);
             }
         }
 
