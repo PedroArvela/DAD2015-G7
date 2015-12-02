@@ -6,19 +6,20 @@ namespace Broker {
         static void Main(string[] args) {
             //TODO: validade input
 
-            //processName processURL site routingtype puppetMasterURL -p parentURL -c childURL
+            //processName processURL site routingtype order puppetMasterURL -p parentURL -c childURL
             string processName = args[0];
             string processURL = args[1];
             string site = args[2];
             string routing = args[3];
-            string puppetMasterURL = args[4];
-            string loggingLevel = args[5];
+            string ordering = args[4];
+            string puppetMasterURL = args[5];
+            string loggingLevel = args[6];
 
             List<string> childList = new List<string>();
             List<string> parentList = new List<string>();
             List<string> subList = new List<string>();
 
-            for (int i = 6; i < args.Length; i += 2) {
+            for (int i = 7; i < args.Length; i += 2) {
                 switch (args[i]) {
                     case "-p":
                         parentList.Add(args[i + 1]);
@@ -33,7 +34,7 @@ namespace Broker {
             }
 
             //initialization of data finished
-            Broker b = new Broker(processName, processURL, site, routing, puppetMasterURL, loggingLevel);
+            Broker b = new Broker(processName, processURL, site, routing, ordering, puppetMasterURL, loggingLevel);
             foreach (string c in childList) {
                 b.addChildUrl(c);
             }
@@ -45,7 +46,17 @@ namespace Broker {
             }
             b.publishToPuppetMaster();
 
-            //Broker program Logic
+            // Thread which monitors the sendQueue and sends the publications accordingly
+            Thread sendTask = new Thread(() => {
+                while (true) {
+                    b.ProcessSendQueue();
+                    Thread.Sleep(50);
+                }
+            });
+            sendTask.Start();
+
+            // This thread will monitor the received messages queue and pass the messages to the send
+            // queue apropriately
             while (true) {
                 b.processQueue();
                 Thread.Sleep(50);

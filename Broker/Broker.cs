@@ -9,7 +9,9 @@ using System.Runtime.Remoting.Channels.Tcp;
 namespace Broker {
     public class Broker : Node, INode {
         private bool _routingPolicy;
+        private string orderPolicy;
         private ConcurrentQueue<Message> _queue = new ConcurrentQueue<Message>();
+        private ConcurrentQueue<Message> sendQueue = new ConcurrentQueue<Message>();
 
         // Key: Topic, Value: Nodes
         private Dictionary<string, Dictionary<string, INode>> topicSubscribers = new Dictionary<string, Dictionary<string, INode>>();
@@ -22,7 +24,15 @@ namespace Broker {
         private bool _delayed = false;
         private int _delayTime = 0;
 
-        public Broker(string processName, string processURL, string site, string routingtype, string puppetMasterURL, string loggingLevel) : base(processName, processURL, site, puppetMasterURL) {
+        // Total Message Ordering:
+        // Publications from the parent which are ready to deliver with a proper order
+        private Dictionary<int, Message> parentMessages = new Dictionary<int, Message>();
+        private int lastParentIndex = -1;
+        
+        // Key: child URL, Value: last index sent to the child
+        private Dictionary<string, int> childrenSendIndex = new Dictionary<string, int>();
+
+        public Broker(string processName, string processURL, string site, string routingtype, string ordering, string puppetMasterURL, string loggingLevel) : base(processName, processURL, site, puppetMasterURL) {
             _puppetMasterURL = puppetMasterURL;
             switch (routingtype) {
                 case "flooding":
@@ -32,6 +42,7 @@ namespace Broker {
                     _routingPolicy = true;
                     break;
             }
+            this.orderPolicy = ordering;
             _loggingLevel = loggingLevel;
 
             //process start arguments
@@ -45,12 +56,29 @@ namespace Broker {
                 return "";
             }
         }
+        public bool containsNode(string url) {
+            return (parent != null && parent.Item1 == url) || children.ContainsKey(url) || subscribers.ContainsKey(url);
+        }
+        public INode getNode(string url) {
+            if (parent != null && parent.Item1 == url) {
+                return parent.Item2;
+            }
+
+            if (children.ContainsKey(url)) {
+                return children[url];
+            }
+
+            if (subscribers.ContainsKey(url)) {
+                return subscribers[url];
+            }
+
+            throw new Exception("No such node exists");
+        }
 
         public void addSubscriberUrl(string url) {
             INode node = aquireConnection(url);
             subscribers.Add(url, node);
         }
-
         public void addChildUrl(string url) {
             INode node = aquireConnection(url);
             children.Add(url, node);
@@ -60,45 +88,53 @@ namespace Broker {
             parent = new Tuple<string, INode>(url, node);
         }
 
-        public bool toggleNode() {
-            return (_enabled = !_enabled);
-        }
-
+        public bool toggleNode() { return (_enabled = !_enabled); }
         public bool toggleDelay(int time) {
             _delayTime = time;
             return (_delayed = !_delayed);
         }
 
         public void setRoutingPolicy(bool policy) { _routingPolicy = policy; }
+        public void setOrdering(string order) { orderPolicy = order; }
+        
+        // Process the queue of new messages
+        public void processQueue() {
+            Message pub = null;
+            if (!_enabled || !_queue.TryDequeue(out pub)) {
+                return;
+            }
+            Console.WriteLine("Processing: " + pub.ToString());
 
-        public override string showNode() {
-            string print = "\tBroker: " + _processName + " for " + _site + " active on " + _processURL + "\n";
-            if (_routingPolicy) {
-                print += "\tRouting Policy: filter\n";
+            if (pub.SubType.Equals(MessageType.Subscribe) || pub.SubType.Equals(MessageType.Unsubscribe)) {
+                Console.WriteLine(pub.SubType.ToString() + " request for topic " + pub.Topic);
+                this.shareSubRequest(pub.Topic, pub.Sender, pub);
             } else {
-                print += "\tRouting Policy: flooding\n";
+                Console.WriteLine(pub.SubType.ToString() + " from " + pub.Publisher);
+                AddToSendQueue(pub);
             }
-            print += "\tParent Broker URL(s):\n";
-            if (parent != null) {
-                print += "\t\t" + parent.Item1 + "\n";
-            }
+        }
 
-            print += "\tChild Broker URL(s):\n";
-            foreach (string curl in children.Keys) {
-                print += "\t\t" + curl + "\n";
-            }
-            print += "\tTopic(s):\n";
-            foreach (string topic in topicSubscribers.Keys) {
-                print += "\t\t" + topic + " has the following interested urls:\n";
-                foreach (string url in topicSubscribers[topic].Keys) {
-                    print += "\t\t\t" + url + "\n";
+        // Process the queue of messages to send
+        public void ProcessSendQueue() {
+            Message pub = null;
+            HashSet<string> destinations;
+
+            lock (childrenSendIndex) {
+                if (!sendQueue.TryDequeue(out pub)) {
+                    return;
+                }
+                destinations = getDestinations(pub);
+
+                Console.WriteLine("Sending " + pub.Topic + " to " + destinations.Count + " destinations");
+
+                // For each destination, assign a new message number and then send it
+                foreach (string destination in destinations) {
+                    sendToDestination(pub, destination);
                 }
             }
-            print += "\tSubscriber(s):\n";
-            foreach (string subscriber in subscribers.Keys) {
-                print += "\t\t" + subscriber + "\n";
-            }
-            return print;
+
+            if (_loggingLevel.Equals("full"))
+                writeToLog("BroEvent " + _processName + ", " + pub.Publisher + ", " + pub.Topic + ", " + pub.Sequence);
         }
 
         private void removeTopic(string topic, string interestedURL) {
@@ -157,53 +193,141 @@ namespace Broker {
             _queue.Enqueue(p);
         }
 
-        public void sendPublication(Message pub) {
-            List<INode> targets = new List<INode>();
+        private void AddToSendQueue(Message pub) {
+            // (Re-)order message if necessary
+            if (orderPolicy == "TOTAL" && pub.Ordered) {
+                // check all backlogged ordered messages to send
+                while(reorderPublication(pub)) {
+                    lock (parentMessages) {
+                        if (parentMessages.Count == 0) {
+                            break;
+                        } else {
+                            pub = parentMessages[lastParentIndex + 1];
+                            parentMessages.Remove(lastParentIndex);
+                        }
+                    }
+                }
+            } else if (orderPolicy == "TOTAL") {
+                // imediatelly give it a new order number
+                orderPublication(pub);
+            } else {
+                // just send it with no frills
+                sendQueue.Enqueue(pub);
+            }
+        }
+
+        private void orderPublication(Message pub) {
+            bool isParent = false;
+
+            foreach (string topic in topicSubscribers.Keys) {
+                // Check if any of the topics matches the parent
+                if ((parent == null || topicSubscribers[topic].ContainsKey(parent.Item1)) &&
+                    !compatibleTopics(topic, pub.Topic)) {
+                    isParent = true;
+                }
+            }
+
+            if (!isParent) {
+                // If we are not the parent, send up
+                parent.Item2.addToQueue(pub);
+            } else {
+                sendQueue.Enqueue(pub);
+            }
+        }
+
+        private bool reorderPublication(Message pub) {
+            bool deliver = false;
+
+            lock (parentMessages) {
+                if (pub.Order == lastParentIndex + 1) {
+                    // Send the message right away if it is in the correct order
+                    lastParentIndex++;
+
+                    deliver = true;
+                } else {
+                    // Wait for more messages to arrive
+                    parentMessages.Add(pub.Order, pub);
+                }
+            }
+
+            if (deliver == true) {
+                lock (sendQueue) {
+                    sendQueue.Enqueue(pub);
+                }
+            }
+
+            return deliver;
+        }
+
+        // Send the message pub to the destination url
+        private void sendToDestination(Message pub, string url) {
+            if (!childrenSendIndex.ContainsKey(url)) {
+                childrenSendIndex.Add(url, -1);
+            }
+
+            childrenSendIndex[url]++;
+            pub.OrderingBroker = _processURL;
+            pub.Order = childrenSendIndex[url];
+
+            getNode(url).addToQueue(pub);
+
+            Console.WriteLine("Publication " + pub.Topic + " from " + pub.Publisher + " sent to: " + url);
+        }
+        
+        // Returns the list of urls where the message should go to
+        private HashSet<string> getDestinations(Message pub) {
+            HashSet<string> destinations = new HashSet<string>();
 
             if (!_routingPolicy) {
-                Console.WriteLine("Sending Message in Flood Mode...");
-
-                if (parent != null && parent.Item1 != pub.originURL) {
-                    targets.Add(parent.Item2);
+                // Flood mode
+                if (parent != null) {
+                    destinations.Add(parent.Item1);
                 }
 
-                foreach (var node in children) {
-                    if (node.Key != pub.originURL) {
-                        targets.Add(node.Value);
-                    }
+                foreach (var node in children.Keys) {
+                    destinations.Add(node);
                 }
 
-                foreach (var node in subscribers) {
-                    if (node.Key != pub.originURL) {
-                        targets.Add(node.Value);
-                    }
+                foreach (var node in subscribers.Keys) {
+                    destinations.Add(node);
                 }
-
             } else {
-                Console.WriteLine("Sending message in Filter Mode...");
-
-                foreach (string interestedTopic in topicSubscribers.Keys) {
-                    Console.WriteLine("testing... " + interestedTopic + " matches " + pub.Topic);
-                    if (this.compatibleTopics(interestedTopic, pub.Topic)) {
-                        foreach (var node in topicSubscribers[interestedTopic]) {
-                            if (node.Key != pub.originURL) {
-                                targets.Add(node.Value);
-                            }
+                // Filter mode
+                // Check if each topic is compatible and add its nodes to the list if so
+                foreach (string topic in topicSubscribers.Keys) {
+                    Console.WriteLine("Testing if " + topic + "matches" + pub.Topic);
+                    if (compatibleTopics(topic, pub.Topic)) {
+                        Console.WriteLine(topic + " matches " + pub.Topic + ". Adding " + topicSubscribers[topic].Count + " nodes");
+                        foreach (string node in topicSubscribers[topic].Keys) {
+                            destinations.Add(node);
                         }
                     }
                 }
             }
 
-            // Send the message to all the selected nodes
-            pub.originURL = _processURL;
-            foreach (INode node in targets) {
-                node.addToQueue(pub);
-
-                if (_loggingLevel.Equals("full"))
-                    this.writeToLog("BroEvent " + _processName + ", " + pub.Publisher + ", " + pub.Topic + ", " + pub.Sequence);
-
-                Console.WriteLine("Publication sent to: " + node.Url());
+            // Only send to the sender if we are the ones responsible for assigning it a number
+            // Remove otherwise
+            if (pub.OrderingBroker != _processURL || orderPolicy != "TOTAL") {
+                if (destinations.Contains(pub.Sender)) {
+                    destinations.Remove(pub.Sender);
+                }
             }
+
+            return destinations;
+        }
+
+        // Give the message a suitable number which is different according to the node it was sent to but
+        // still coherent among nodes.
+        private void orderForNode(Message pub, string target) {
+            string url = target;
+
+            // This requires the parent function to lock the sendingQueue
+            if (!childrenSendIndex.ContainsKey(url)) {
+                childrenSendIndex.Add(url, -1);
+            }
+
+            childrenSendIndex[url]++;
+            pub.Order = childrenSendIndex[url];
         }
 
         private bool compatibleTopics(string topic, string test) {
@@ -309,23 +433,9 @@ namespace Broker {
                 }
             }
 
-            request.originURL = _processURL;
+            request.Sender = _processURL;
             foreach (INode node in shareList) {
                 node.addToQueue(request);
-            }
-        }
-
-        public void processQueue() {
-            Message pub = null;
-            if (!_enabled || !_queue.TryDequeue(out pub)) {
-                return;
-            }
-            Console.WriteLine("Processing: " + pub.ToString());
-            if (pub.SubType.Equals(MessageType.Subscribe) || pub.SubType.Equals(MessageType.Unsubscribe)) {
-                Console.WriteLine(pub.SubType.ToString() + " request for topic " + pub.Topic);
-                this.shareSubRequest(pub.Topic, pub.originURL, pub);
-            } else {
-                this.sendPublication(pub);
             }
         }
 
@@ -336,24 +446,23 @@ namespace Broker {
             Console.WriteLine("Publishing on port: " + port.ToString() + " with uri: " + uri);
 
             TcpChannel channel = new TcpChannel(port);
-            //Channel is already registered by PuppetMaster
-            //ChannelServices.RegisterChannel(channel, false);
-
             RemotingServices.Marshal(this, uri, typeof(Broker));
-        }
-
-        public override void printNode() {
-            Console.WriteLine(this.showNode());
         }
 
         protected override string getArguments() {
             //processName processURL site routingtype puppetMasterURL loggingLevel -p parentURL -c childURL -s subURL
             string arguments = _processName + " " + _processURL + " " + _site + " ";
             if (_routingPolicy) {
-                arguments += "filter" + " " + _puppetMasterURL + " " + _loggingLevel;
+                arguments += "filter";
             } else {
-                arguments += "flooding" + " " + _puppetMasterURL + " " + _loggingLevel;
+                arguments += "flooding";
             }
+
+            arguments += " ";
+
+            arguments += orderPolicy;
+
+            arguments += " " + _puppetMasterURL + " " + _loggingLevel;
 
             if (parent != null) {
                 arguments += " -p " + parent.Item1;
@@ -372,6 +481,40 @@ namespace Broker {
             _nodeProcess.StartInfo.Arguments = this.getArguments();
             _nodeProcess.Start();
             _executing = true;
+        }
+
+        public override void printNode() {
+            Console.WriteLine(this.showNode());
+        }
+
+        public override string showNode() {
+            string print = "\tBroker: " + _processName + " for " + _site + " active on " + _processURL + "\n";
+            if (_routingPolicy) {
+                print += "\tRouting Policy: filter\n";
+            } else {
+                print += "\tRouting Policy: flooding\n";
+            }
+            print += "\tParent Broker URL(s):\n";
+            if (parent != null) {
+                print += "\t\t" + parent.Item1 + "\n";
+            }
+
+            print += "\tChild Broker URL(s):\n";
+            foreach (string curl in children.Keys) {
+                print += "\t\t" + curl + "\n";
+            }
+            print += "\tTopic(s):\n";
+            foreach (string topic in topicSubscribers.Keys) {
+                print += "\t\t" + topic + " has the following interested urls:\n";
+                foreach (string url in topicSubscribers[topic].Keys) {
+                    print += "\t\t\t" + url + "\n";
+                }
+            }
+            print += "\tSubscriber(s):\n";
+            foreach (string subscriber in subscribers.Keys) {
+                print += "\t\t" + subscriber + "\n";
+            }
+            return print;
         }
     }
 }

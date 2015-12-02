@@ -27,7 +27,7 @@ namespace PuppetMaster {
         private string _loggingLevel = "light";
         private bool _routingPolicy = false;
         private String logFile = ".\\Logfile.txt";
-        private String _ordering = "NO";
+        private String _ordering = "NONE";
         private String _masterURL = "";
         private StreamWriter logFilePipe;
 
@@ -398,9 +398,9 @@ namespace PuppetMaster {
                 switch (type) {
                     case "broker":
                         if (_routingPolicy) {
-                            b = new Broker.Broker(processName, Url, Site, "filter", this._masterURL, _loggingLevel);
+                            b = new Broker.Broker(processName, Url, Site, "filter", _ordering, this._masterURL, _loggingLevel);
                         } else {
-                            b = new Broker.Broker(processName, Url, Site, "flooding", this._masterURL, _loggingLevel);
+                            b = new Broker.Broker(processName, Url, Site, "flooding", _ordering, this._masterURL, _loggingLevel);
                         }
                         if (targetSite.getParent() != null) {
                             foreach (string url in targetSite.getParent().getBrokerUrls()) {
@@ -507,8 +507,8 @@ namespace PuppetMaster {
             foreach (Broker.Broker b in _brokers) {
                 if (b.getProcessName().Equals(processName) && b.getExecuting()) {
                     connectToNode("broker", processName);
-                    Message msg = new Message(MessageType.Publication, b.getSite(), topic, "demoContent", DateTime.Now, sequenceNumber, "puppetMaster");
-                    msg.originURL = b.getProcessURL();
+                    Message msg = new Message(MessageType.Publication, b.getSite(), "puppetMaster", topic, sequenceNumber);
+                    msg.Sender = b.getProcessURL();
                     _remoteBroker.addToQueue(msg);
                     return;
                 }
@@ -566,6 +566,14 @@ namespace PuppetMaster {
                     _remoteSub.setOrdering(ordering);
                 }
                 s.setOrdering(ordering);
+            }
+
+            foreach (Broker.Broker b in _brokers) {
+                if (b.getExecuting()) {
+                    this.connectToNode("broker", b.getProcessName());
+                    _remoteBroker.setOrdering(ordering);
+                }
+                b.setOrdering(ordering);
             }
         }
 

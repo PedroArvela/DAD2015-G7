@@ -50,8 +50,8 @@ namespace Publisher {
 
                     Console.WriteLine("Publish event #" + i + " out of " + numberOfEvents + ". Using sequence #" + sequence);
 
-                    pub = new Message(MessageType.Publication, _site, topic, "publication", DateTime.Now, sequence, _processName);
-                    pub.originURL = _processURL;
+                    pub = new Message(MessageType.Publication, _site, _processName, topic, sequence);
+                    pub.Sender = _processURL;
                     _pubHistory.Add(pub);
 
                     if (siteBroker == null)

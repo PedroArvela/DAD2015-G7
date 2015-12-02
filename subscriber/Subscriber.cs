@@ -19,6 +19,9 @@ namespace Subscriber {
         private INode siteBroker;
         private object _queueLock = new object();
 
+        // Total Message Ordering
+        private int lastDeliveredTotal = -1;
+
         public Subscriber(string processName, string processURL, string site, string puppetMasterURL, string ordering) : base(processName, processURL, site, puppetMasterURL) {
             _ordering = ordering;
 
@@ -67,6 +70,8 @@ namespace Subscriber {
                 deliverUnordered(pub);
             } else if (_ordering == "FIFO") {
                 deliverFifo(pub);
+            } else if (_ordering == "TOTAL") {
+                deliverTotal(pub);
             }
         }
 
@@ -110,6 +115,10 @@ namespace Subscriber {
             }
         }
 
+        private void deliverTotal(Message pub) {
+            
+        }
+
         public void subscribe(string topic) {
             Message request = null;
 
@@ -121,8 +130,8 @@ namespace Subscriber {
                 Console.WriteLine("Sending subscription request to: " + siteBrokerUrl);
                 writeToLog("Subscriber " + _processName + " Subscribe " + topic);
 
-                request = new Message(MessageType.Subscribe, _site, topic, "subscribe", DateTime.Now, sendSequence, _processName);
-                request.originURL = _processURL;
+                request = new Message(MessageType.Subscribe, _site, _processName, topic, sendSequence);
+                request.Sender = _processURL;
                 siteBroker.addToQueue(request);
                 _subscriptionTopics.Add(topic);
                 sendSequence++;
@@ -140,8 +149,8 @@ namespace Subscriber {
                 Console.WriteLine("Sending unsubscription request to: " + siteBrokerUrl);
                 writeToLog("Subscriber " + _processName + " Unsubscribe " + topic);
 
-                request = new Message(MessageType.Unsubscribe, _site, topic, "unsubscribe", DateTime.Now, sendSequence, _processName);
-                request.originURL = _processURL;
+                request = new Message(MessageType.Unsubscribe, _site, _processName, topic, sendSequence);
+                request.Sender = _processURL;
                 siteBroker.addToQueue(request);
                 _subscriptionTopics.Remove(topic);
                 sendSequence++;
