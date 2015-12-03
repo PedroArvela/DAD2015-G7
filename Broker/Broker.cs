@@ -28,7 +28,7 @@ namespace Broker {
         // Publications from the parent which are ready to deliver with a proper order
         private Dictionary<int, Message> parentMessages = new Dictionary<int, Message>();
         private int lastParentIndex = -1;
-        
+
         // Key: child URL, Value: last index sent to the child
         private Dictionary<string, int> childrenSendIndex = new Dictionary<string, int>();
 
@@ -96,7 +96,7 @@ namespace Broker {
 
         public void setRoutingPolicy(bool policy) { _routingPolicy = policy; }
         public void setOrdering(string order) { orderPolicy = order; }
-        
+
         // Process the queue of new messages
         public void processQueue() {
             Message pub = null;
@@ -196,8 +196,9 @@ namespace Broker {
         private void AddToSendQueue(Message pub) {
             // (Re-)order message if necessary
             if (orderPolicy == "TOTAL" && pub.Ordered) {
+                Console.WriteLine("Reordering ordered message from the parent");
                 // check all backlogged ordered messages to send
-                while(reorderPublication(pub)) {
+                while (reorderPublication(pub)) {
                     lock (parentMessages) {
                         if (parentMessages.Count == 0) {
                             break;
@@ -208,6 +209,7 @@ namespace Broker {
                     }
                 }
             } else if (orderPolicy == "TOTAL") {
+                Console.WriteLine("Ordering message");
                 // imediatelly give it a new order number
                 orderPublication(pub);
             } else {
@@ -221,8 +223,8 @@ namespace Broker {
 
             foreach (string topic in topicSubscribers.Keys) {
                 // Check if any of the topics matches the parent
-                if ((parent == null || topicSubscribers[topic].ContainsKey(parent.Item1)) &&
-                    !compatibleTopics(topic, pub.Topic)) {
+                if (parent == null ||
+                    (topicSubscribers[topic].ContainsKey(parent.Item1) && !compatibleTopics(topic, pub.Topic))) {
                     isParent = true;
                 }
             }
@@ -266,6 +268,7 @@ namespace Broker {
             }
 
             childrenSendIndex[url]++;
+            pub.Ordered = true;
             pub.OrderingBroker = _processURL;
             pub.Order = childrenSendIndex[url];
 
@@ -273,7 +276,7 @@ namespace Broker {
 
             Console.WriteLine("Publication " + pub.Topic + " from " + pub.Publisher + " sent to: " + url);
         }
-        
+
         // Returns the list of urls where the message should go to
         private HashSet<string> getDestinations(Message pub) {
             HashSet<string> destinations = new HashSet<string>();
@@ -307,9 +310,13 @@ namespace Broker {
 
             // Only send to the sender if we are the ones responsible for assigning it a number
             // Remove otherwise
-            if (pub.OrderingBroker != _processURL || orderPolicy != "TOTAL") {
+            if (orderPolicy != "TOTAL" || !pub.Ordered) {
                 if (destinations.Contains(pub.Sender)) {
                     destinations.Remove(pub.Sender);
+                }
+            } else if(parent != null && pub.Ordered) {
+                if (destinations.Contains(parent.Item1)) {
+                    destinations.Remove(parent.Item1);
                 }
             }
 

@@ -1,5 +1,5 @@
 RoutingPolicy filter
-Ordering FIFO
+Ordering TOTAL
 LoggingLevel full
 Site google Parent none
 Site yhaoo Parent google
