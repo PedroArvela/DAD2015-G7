@@ -11,6 +11,7 @@ namespace SESDADLib {
     public class Message {
         public MessageType SubType { get; }
         public string Sender { get; set; }
+        public string SenderSite { get; set; }
 
         // Total Message Ordering
         public bool Ordered;

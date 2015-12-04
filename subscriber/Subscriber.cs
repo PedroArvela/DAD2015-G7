@@ -156,6 +156,7 @@ namespace Subscriber {
                 request = new Message(MessageType.Subscribe, _site, _processName, topic, sendSequence);
                 try {
                     request.Sender = _processURL;
+                    request.SenderSite = getSite();
                     mainParent.addToQueue(request);
                     _subscriptionTopics.Add(topic);
                     sendSequence++;
@@ -184,6 +185,7 @@ namespace Subscriber {
 
                 request = new Message(MessageType.Unsubscribe, _site, _processName, topic, sendSequence);
                 request.Sender = _processURL;
+                request.SenderSite = getSite();
                 mainParent.addToQueue(request);
                 _subscriptionTopics.Remove(topic);
                 sendSequence++;

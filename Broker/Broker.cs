@@ -122,7 +122,7 @@ namespace Broker {
             if (pub.SubType.Equals(MessageType.Subscribe) || pub.SubType.Equals(MessageType.Unsubscribe)) {
                 // If the message is a subscribe or unsubscribe event, just send it away
                 Console.WriteLine(pub.SubType.ToString() + " request for topic " + pub.Topic);
-                this.shareSubRequest(pub.Topic, pub.Site, pub);
+                this.shareSubRequest(pub.Topic, pub.SenderSite, pub);
             } else {
                 Console.WriteLine("Processing publication #" + pub.Sequence + " from " + pub.Publisher);
                 // Otherwise run all of the tricky logic to send messages ordered
@@ -271,6 +271,7 @@ namespace Broker {
             childrenSendIndex[url]++;
             pub.Order = childrenSendIndex[url];
             pub.Sender = _processURL;
+            pub.SenderSite = getSite();
 
             getNode(url).addToQueue(pub);
 
@@ -444,6 +445,7 @@ namespace Broker {
             }
 
             request.Sender = _processURL;
+            request.SenderSite = getSite();
             foreach (INode node in shareList) {
                 node.addToQueue(request);
             }
