@@ -399,8 +399,10 @@ namespace Broker {
                     node = parent.Item2;
                 } else if (children.Keys.Contains(origin)) {
                     node = children[origin];
-                } else {
+                } else if (subscribers.Keys.Contains(origin)) {
                     node = subscribers[origin];
+                } else {
+                    return;
                 }
 
                 if (!topicSubscribers.ContainsKey(topic)) {

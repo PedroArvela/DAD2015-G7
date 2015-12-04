@@ -177,7 +177,7 @@ namespace PuppetMaster {
 
         public bool processCommand(String command) {
             String sitePatern = "^Site\\s[A-Za-z0-9]+\\sParent\\s[A-Za-z0-9]+$";
-            String processPatern = "^Process\\s[A-Za-z0-9]+\\sIs\\s(broker|publisher|subscriber)\\sOn\\s[A-Za-z0-9]+\\sURL\\stcp://((([0-9]+\\.){3}[0-9])|localhost):[0-9]{3,}/[A-Za-z]+$";
+            String processPatern = "^Process\\s[A-Za-z0-9]+\\sIs\\s(broker|publisher|subscriber)\\sOn\\s[A-Za-z0-9]+\\sURL\\stcp://((([0-9]+\\.){3}[0-9])|localhost):[0-9]{3,}/[A-Za-z0-9]+$";
             String routingPatern = "^RoutingPolicy\\s(flood|filter|flooding|filtering)$";
             String orderingPatern = "^Ordering\\s(NO|FIFO|TOTAL)$";
             String subPatern = "^Subscriber\\s[A-Za-z0-9]+\\sSubscribe\\s[A-Za-z0-9/\\*-]+$";

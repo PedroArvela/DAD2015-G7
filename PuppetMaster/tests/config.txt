@@ -6,11 +6,21 @@ Site yhaoo Parent google
 Site blinx Parent google
 Site microsoft Parent blinx
 Site apple Parent blinx
-Process gBroker Is broker On google URL tcp://localhost:1234/gBroker
-Process yBroker Is broker On yhaoo URL tcp://localhost:1235/yBroker
-Process bBroker Is broker On blinx URL tcp://localhost:1236/bBroker
-Process mBroker Is broker On microsoft URL tcp://localhost:1237/mBroker
-Process aBroker Is broker On apple URL tcp://localhost:1238/aBroker
+Process gBroker1 Is broker On google URL tcp://localhost:1001/gBroker1
+Process gBroker2 Is broker On google URL tcp://localhost:1002/gBroker2
+Process gBroker3 Is broker On google URL tcp://localhost:1003/gBroker3
+Process yBroker1 Is broker On yhaoo URL tcp://localhost:2001/yBroker1
+Process yBroker2 Is broker On yhaoo URL tcp://localhost:2002/yBroker2
+Process yBroker3 Is broker On yhaoo URL tcp://localhost:2003/yBroker3
+Process bBroker1 Is broker On blinx URL tcp://localhost:3001/bBroker1
+Process bBroker2 Is broker On blinx URL tcp://localhost:3002/bBroker2
+Process bBroker3 Is broker On blinx URL tcp://localhost:3003/bBroker3
+Process mBroker1 Is broker On microsoft URL tcp://localhost:4001/mBroker1
+Process mBroker2 Is broker On microsoft URL tcp://localhost:4002/mBroker2
+Process mBroker3 Is broker On microsoft URL tcp://localhost:4003/mBroker3
+Process aBroker1 Is broker On apple URL tcp://localhost:5001/aBroker1
+Process aBroker2 Is broker On apple URL tcp://localhost:5002/aBroker2
+Process aBroker3 Is broker On apple URL tcp://localhost:5003/aBroker3
 Process yPub Is publisher On yhaoo URL tcp://localhost:1239/yPub
 Process mSub Is subscriber On microsoft URL tcp://localhost:1240/mSub
 Process aSub Is subscriber On apple URL tcp://localhost:1241/aSub
