@@ -233,6 +233,8 @@ namespace Broker {
                 // If we are not the parent, send up
                 parent.Item2.addToQueue(pub);
             } else {
+                pub.Ordered = true;
+                pub.OrderingBroker = _processURL;
                 sendQueue.Enqueue(pub);
             }
         }
@@ -268,9 +270,8 @@ namespace Broker {
             }
 
             childrenSendIndex[url]++;
-            pub.Ordered = true;
-            pub.OrderingBroker = _processURL;
             pub.Order = childrenSendIndex[url];
+            pub.Sender = _processURL;
 
             getNode(url).addToQueue(pub);
 
@@ -310,13 +311,9 @@ namespace Broker {
 
             // Only send to the sender if we are the ones responsible for assigning it a number
             // Remove otherwise
-            if (orderPolicy != "TOTAL" || !pub.Ordered) {
+            if (orderPolicy != "TOTAL" || pub.OrderingBroker != _processURL) {
                 if (destinations.Contains(pub.Sender)) {
                     destinations.Remove(pub.Sender);
-                }
-            } else if(parent != null && pub.Ordered) {
-                if (destinations.Contains(parent.Item1)) {
-                    destinations.Remove(parent.Item1);
                 }
             }
 

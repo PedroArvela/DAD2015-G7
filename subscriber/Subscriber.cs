@@ -21,6 +21,7 @@ namespace Subscriber {
 
         // Total Message Ordering
         private int lastDeliveredTotal = -1;
+        private Dictionary<int, Message> undeliveredListTotal = new Dictionary<int, Message>();
 
         public Subscriber(string processName, string processURL, string site, string puppetMasterURL, string ordering) : base(processName, processURL, site, puppetMasterURL) {
             _ordering = ordering;
@@ -89,8 +90,6 @@ namespace Subscriber {
             string origin = pub.Publisher;
             int seq = pub.Sequence;
 
-            Console.WriteLine("Sequence: " + seq + "\tLast: " + _lastDelivered[origin]);
-
             if (_lastDelivered[origin] == seq - 1) {
                 // Deliver only if it is the next in the sequence
                 Console.WriteLine("Delivering message on topic" + pub.Topic + " from " + origin + " sequence " + seq);
@@ -116,7 +115,30 @@ namespace Subscriber {
         }
 
         private void deliverTotal(Message pub) {
-            
+            int seq = pub.Order;
+
+            if (lastDeliveredTotal == seq - 1) {
+                // Deliver only if it is the next in the sequence
+                Console.WriteLine("Delivering message #" + seq + " on topic" + pub.Topic + " from " + pub.Publisher + " sequence " + pub.Sequence);
+                writeToLog("SubEvent " + _processName + ", " + pub.Publisher + ", " + pub.Topic + ", " + eventNumber);
+                eventNumber++;
+
+                _messageHistory.Add(pub);
+                lastDeliveredTotal = seq;
+
+                // Deliver all undelivered messages depending on this one
+                while (undeliveredListTotal.ContainsKey(seq + 1)) {
+                    seq = lastDeliveredTotal + 1;
+                    pub = undeliveredListTotal[seq];
+
+                    undeliveredListTotal.Remove(seq);
+                    _messageHistory.Add(pub);
+                    lastDeliveredTotal++;
+                }
+            } else if (lastDeliveredTotal > seq) {
+                // Otherwise just store it for future delivery
+                undeliveredListTotal.Add(seq, pub);
+            }
         }
 
         public void subscribe(string topic) {
@@ -208,7 +230,7 @@ namespace Subscriber {
             int port = Int32.Parse(_processURL.Split(':')[2].Split('/')[0]);
             string uri = _processURL.Split(':')[2].Split('/')[1];
 
-            Console.WriteLine("\t\tPublishing on port: " + port.ToString() + " with uri: " + uri + "\n");
+            Console.WriteLine("Publishing on port: " + port.ToString() + " with uri: " + uri + "\n");
 
             TcpChannel channel = new TcpChannel(port);
 
