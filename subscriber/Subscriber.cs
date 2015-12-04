@@ -154,10 +154,20 @@ namespace Subscriber {
                 writeToLog("Subscriber " + _processName + " Subscribe " + topic);
 
                 request = new Message(MessageType.Subscribe, _site, _processName, topic, sendSequence);
-                request.Sender = _processURL;
-                mainParent.addToQueue(request);
-                _subscriptionTopics.Add(topic);
-                sendSequence++;
+                try {
+                    request.Sender = _processURL;
+                    mainParent.addToQueue(request);
+                    _subscriptionTopics.Add(topic);
+                    sendSequence++;
+                } catch(System.Net.Sockets.SocketException)
+                {
+                    parents.Remove(mainParentURL);
+                    List<string> keyList = new List<string>(parents.Keys);
+                    mainParentURL = keyList[0];
+                    Console.WriteLine(mainParentURL + " was unavailable, switching to " + keyList[0]);
+                    mainParent = parents[mainParentURL];
+                    subscribe(topic);
+                }
             }
         }
 
