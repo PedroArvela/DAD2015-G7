@@ -56,15 +56,6 @@ namespace Broker {
             }
             b.publishToPuppetMaster();
 
-            // Thread which monitors the sendQueue and sends the publications accordingly
-            Thread sendTask = new Thread(() => {
-                while (true) {
-                    b.ProcessSendQueue();
-                    Thread.Sleep(50);
-                }
-            });
-            sendTask.Start();
-
             // This thread will monitor the received messages queue and pass the messages to the send
             // queue apropriately
             while (true) {
