@@ -10,7 +10,6 @@ namespace Broker {
     public class Broker : Node, INode {
         private bool _routingPolicy;
         private string orderPolicy;
-        private ConcurrentQueue<Message> _queue = new ConcurrentQueue<Message>();
         private ConcurrentQueue<Message> sendQueue = new ConcurrentQueue<Message>();
 
         // Key: Topic, Value: Nodes
@@ -110,39 +109,32 @@ namespace Broker {
         public void setRoutingPolicy(bool policy) { _routingPolicy = policy; }
         public void setOrdering(string order) { orderPolicy = order; }
 
-        // Process the queue of new messages
-        public void processQueue() {
-            Message pub = null;
-            if (!_enabled || !_queue.TryDequeue(out pub)) {
-                return;
-            }
-            Console.WriteLine("Processing: " + pub.ToString());
-
-            if (pub.SubType.Equals(MessageType.Subscribe) || pub.SubType.Equals(MessageType.Unsubscribe)) {
-                Console.WriteLine(pub.SubType.ToString() + " request for topic " + pub.Topic);
-                this.shareSubRequest(pub.Topic, pub.Sender, pub);
-            } else {
-                Console.WriteLine(pub.SubType.ToString() + " from " + pub.Publisher);
-                AddToSendQueue(pub);
-            }
-        }
-
         // Process the queue of messages to send
-        public void ProcessSendQueue() {
+        public void processQueue() {
             Message pub = null;
             HashSet<string> destinations;
 
-            lock (childrenSendIndex) {
-                if (!sendQueue.TryDequeue(out pub)) {
-                    return;
-                }
-                destinations = getDestinations(pub);
+            // If we can't run we should simply skip this part
+            if (!_enabled || !sendQueue.TryDequeue(out pub)) {
+                return;
+            }
+            
+            if (pub.SubType.Equals(MessageType.Subscribe) || pub.SubType.Equals(MessageType.Unsubscribe)) {
+                // If the message is a subscribe or unsubscribe event, just send it away
+                Console.WriteLine(pub.SubType.ToString() + " request for topic " + pub.Topic);
+                this.shareSubRequest(pub.Topic, pub.Sender, pub);
+            } else {
+                Console.WriteLine("Processing publication #" + pub.Sequence + " from " + pub.Publisher);
+                // Otherwise run all of the tricky logic to send messages ordered
+                lock (childrenSendIndex) {
+                    destinations = getDestinations(pub);
 
-                Console.WriteLine("Sending " + pub.Topic + " to " + destinations.Count + " destinations");
+                    Console.WriteLine("Sending " + pub.Topic + " to " + destinations.Count + " destinations");
 
-                // For each destination, assign a new message number and then send it
-                foreach (string destination in destinations) {
-                    sendToDestination(pub, destination);
+                    // For each destination, assign a new message number and then send it
+                    foreach (string destination in destinations) {
+                        sendToDestination(pub, destination);
+                    }
                 }
             }
 
@@ -202,32 +194,26 @@ namespace Broker {
         }
 
         public void addToQueue(Message p) {
-            Console.WriteLine("Adding to queue");
-            _queue.Enqueue(p);
-        }
-
-        private void AddToSendQueue(Message pub) {
             // (Re-)order message if necessary
-            if (orderPolicy == "TOTAL" && pub.Ordered) {
+            if (orderPolicy == "TOTAL" && p.SubType == MessageType.Publication && p.Ordered) {
                 Console.WriteLine("Reordering ordered message from the parent");
                 // check all backlogged ordered messages to send
-                while (reorderPublication(pub)) {
+                while (reorderPublication(p)) {
                     lock (parentMessages) {
                         if (parentMessages.Count == 0) {
                             break;
                         } else {
-                            pub = parentMessages[lastParentIndex + 1];
+                            p = parentMessages[lastParentIndex + 1];
                             parentMessages.Remove(lastParentIndex);
                         }
                     }
                 }
-            } else if (orderPolicy == "TOTAL") {
-                Console.WriteLine("Ordering message");
-                // imediatelly give it a new order number
-                orderPublication(pub);
+            } else if (orderPolicy == "TOTAL" && p.SubType == MessageType.Publication) {
+                Console.WriteLine("Message with no order received.");
+                orderPublication(p);
             } else {
-                // just send it with no frills
-                sendQueue.Enqueue(pub);
+                Console.WriteLine("Adding message to send queue");
+                sendQueue.Enqueue(p);
             }
         }
 
