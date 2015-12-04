@@ -30,6 +30,7 @@ namespace PuppetMaster {
         private String _ordering = "NONE";
         private String _masterURL = "";
         private StreamWriter logFilePipe;
+        private bool _faultTolerant = true;
 
         static void Main(string[] args) {
             PuppetMaster master = new PuppetMaster("tcp://localhost:1337/puppetMaster");
@@ -397,19 +398,37 @@ namespace PuppetMaster {
             } else {
                 switch (type) {
                     case "broker":
-                        if (_routingPolicy) {
-                            b = new Broker.Broker(processName, Url, Site, "filter", _ordering, this._masterURL, _loggingLevel);
-                        } else {
-                            b = new Broker.Broker(processName, Url, Site, "flooding", _ordering, this._masterURL, _loggingLevel);
+                        if (_routingPolicy)
+                        {
+                            b = new Broker.Broker(processName, Url, Site, "filter", _ordering, this._masterURL, _loggingLevel, _faultTolerant);
                         }
-                        if (targetSite.getParent() != null) {
-                            foreach (string url in targetSite.getParent().getBrokerUrls()) {
+                        else
+                        {
+                            b = new Broker.Broker(processName, Url, Site, "flooding", _ordering, this._masterURL, _loggingLevel, _faultTolerant);
+                        }
+                        if (targetSite.getParent() != null)
+                        {
+                            foreach (string url in targetSite.getParent().getBrokerUrls())
+                            {
                                 b.addParentUrl(url);
                             }
-                            foreach (Broker.Broker parentBroker in targetSite.getParent().getBrokers()) {
+                            foreach (Broker.Broker parentBroker in targetSite.getParent().getBrokers())
+                            {
                                 parentBroker.addChildUrl(Url);
                             }
                         }
+                        if (_faultTolerant && targetSite.getBrokers() != null)
+                        {
+                            foreach (string url in targetSite.getBrokerUrls())
+                            {
+                                b.addBackupUrl(url);
+                            }
+                            foreach(Broker.Broker backupBroker in targetSite.getBrokers())
+                            {
+                                backupBroker.addBackupUrl(Url);
+                            }
+                        }
+
                         Console.WriteLine(b.getProcessName());
                         _brokers.Add(b);
                         targetSite.addBroker(b);

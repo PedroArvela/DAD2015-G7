@@ -24,6 +24,9 @@ namespace Broker {
         private bool _delayed = false;
         private int _delayTime = 0;
 
+        private bool _faultTolerant = false;
+        private Dictionary<string, INode> backupBrokers = new Dictionary<string, INode>();
+
         // Total Message Ordering:
         // Publications from the parent which are ready to deliver with a proper order
         private Dictionary<int, Message> parentMessages = new Dictionary<int, Message>();
@@ -32,7 +35,7 @@ namespace Broker {
         // Key: child URL, Value: last index sent to the child
         private Dictionary<string, int> childrenSendIndex = new Dictionary<string, int>();
 
-        public Broker(string processName, string processURL, string site, string routingtype, string ordering, string puppetMasterURL, string loggingLevel) : base(processName, processURL, site, puppetMasterURL) {
+        public Broker(string processName, string processURL, string site, string routingtype, string ordering, string puppetMasterURL, string loggingLevel, bool faultTolerant) : base(processName, processURL, site, puppetMasterURL) {
             _puppetMasterURL = puppetMasterURL;
             switch (routingtype) {
                 case "flooding":
@@ -44,6 +47,7 @@ namespace Broker {
             }
             this.orderPolicy = ordering;
             _loggingLevel = loggingLevel;
+            _faultTolerant = faultTolerant;
 
             //process start arguments
             _nodeProcess.StartInfo.FileName = "..\\..\\..\\Broker\\bin\\Debug\\Broker.exe";
@@ -86,6 +90,11 @@ namespace Broker {
         public void addParentUrl(string url) {
             INode node = aquireConnection(url);
             parent = new Tuple<string, INode>(url, node);
+        }
+        public void addBackupUrl(string url)
+        {
+            INode node = aquireConnection(url);
+            backupBrokers.Add(url, node);
         }
 
         public bool toggleNode() { return (_enabled = !_enabled); }
@@ -454,7 +463,7 @@ namespace Broker {
         }
 
         protected override string getArguments() {
-            //processName processURL site routingtype puppetMasterURL loggingLevel -p parentURL -c childURL -s subURL
+            //processName processURL site routingtype puppetMasterURL loggingLevel faultTolerant -p parentURL -c childURL -s subURL -b backupURL
             string arguments = _processName + " " + _processURL + " " + _site + " ";
             if (_routingPolicy) {
                 arguments += "filter";
@@ -468,6 +477,8 @@ namespace Broker {
 
             arguments += " " + _puppetMasterURL + " " + _loggingLevel;
 
+            arguments += " " + _faultTolerant;
+
             if (parent != null) {
                 arguments += " -p " + parent.Item1;
             }
@@ -477,6 +488,10 @@ namespace Broker {
             }
             foreach (string sub in subscribers.Keys) {
                 arguments += " -s " + sub;
+            }
+            foreach(string backup in backupBrokers.Keys)
+            {
+                arguments += " -b " + backup;
             }
             return arguments;
         }
@@ -507,6 +522,15 @@ namespace Broker {
             foreach (string curl in children.Keys) {
                 print += "\t\t" + curl + "\n";
             }
+            if (_faultTolerant)
+            {
+                print += "\tBackup Brokers URL(s):\n";
+                foreach(string bburl in backupBrokers.Keys)
+                {
+                    print += "\t\t" + bburl + "\n";
+                }
+            }
+
             print += "\tTopic(s):\n";
             foreach (string topic in topicSubscribers.Keys) {
                 print += "\t\t" + topic + " has the following interested urls:\n";
