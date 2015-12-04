@@ -122,7 +122,7 @@ namespace Broker {
             if (pub.SubType.Equals(MessageType.Subscribe) || pub.SubType.Equals(MessageType.Unsubscribe)) {
                 // If the message is a subscribe or unsubscribe event, just send it away
                 Console.WriteLine(pub.SubType.ToString() + " request for topic " + pub.Topic);
-                this.shareSubRequest(pub.Topic, pub.Sender, pub);
+                this.shareSubRequest(pub.Topic, pub.Site, pub);
             } else {
                 Console.WriteLine("Processing publication #" + pub.Sequence + " from " + pub.Publisher);
                 // Otherwise run all of the tricky logic to send messages ordered
@@ -394,16 +394,21 @@ namespace Broker {
             List<INode> shareList = new List<INode>();
 
             if (request.SubType.Equals(MessageType.Subscribe)) {
-                INode node;
-                if (parent != null && parent.Item1 == origin) {
+                INode node = null;
+                if (parent != null && parent.Item2.getSite() == origin)
                     node = parent.Item2;
-                } else if (children.Keys.Contains(origin)) {
-                    node = children[origin];
-                } else if (subscribers.Keys.Contains(origin)) {
-                    node = subscribers[origin];
-                } else {
-                    return;
+                foreach (INode n in children.Values)
+                {
+                    if (n.getSite() == origin)
+                        node = n;
                 }
+                foreach (INode n in subscribers.Values)
+                {
+                    if (n.getSite() == origin)
+                        node = n;
+                }
+                if (node == null)
+                    return;
 
                 if (!topicSubscribers.ContainsKey(topic)) {
                     topicSubscribers.Add(topic, new Dictionary<string, INode>());
@@ -429,12 +434,12 @@ namespace Broker {
             }
 
             //share request
-            if (parent != null && parent.Item1 != origin) {
+            if (parent != null && parent.Item2.getSite() != origin) {
                 shareList.Add(parent.Item2);
             }
-            foreach (var node in children) {
-                if (node.Key != origin) {
-                    shareList.Add(node.Value);
+            foreach (INode node in children.Values) {
+                if (node.getSite() != origin) {
+                    shareList.Add(node);
                 }
             }
 
