@@ -15,8 +15,9 @@ namespace Subscriber {
         private ConcurrentQueue<Message> _queueMessages = new ConcurrentQueue<Message>();
         private Dictionary<string, Dictionary<int, Message>> _undeliveredList = new Dictionary<string, Dictionary<int, Message>>(); // key: pubURI, value: undeliveredList
         private List<Message> _messageHistory = new List<Message>();
-        private string siteBrokerUrl = "";
-        private INode siteBroker;
+        private Dictionary<string, INode> parents = new Dictionary<string, INode>();
+        private string mainParentURL = "";
+        private INode mainParent;
         private object _queueLock = new object();
 
         // Total Message Ordering
@@ -144,17 +145,17 @@ namespace Subscriber {
         public void subscribe(string topic) {
             Message request = null;
 
-            if (siteBroker == null) {
+            if (mainParent == null) {
                 Console.WriteLine("Could not connect to broker");
             } else if (_subscriptionTopics.Contains(topic)) {
                 Console.WriteLine("Topic already Subscribed to...");
             } else {
-                Console.WriteLine("Sending subscription request to: " + siteBrokerUrl);
+                Console.WriteLine("Sending subscription request to: " + mainParentURL);
                 writeToLog("Subscriber " + _processName + " Subscribe " + topic);
 
                 request = new Message(MessageType.Subscribe, _site, _processName, topic, sendSequence);
                 request.Sender = _processURL;
-                siteBroker.addToQueue(request);
+                mainParent.addToQueue(request);
                 _subscriptionTopics.Add(topic);
                 sendSequence++;
             }
@@ -163,17 +164,17 @@ namespace Subscriber {
         public void unsubscribe(string topic) {
             Message request = null;
 
-            if (siteBroker == null) {
+            if (mainParent == null) {
                 Console.WriteLine("Could not connect to broker");
             } else if (!_subscriptionTopics.Contains(topic)) {
                 Console.WriteLine("Nonexistent Topic...");
             } else {
-                Console.WriteLine("Sending unsubscription request to: " + siteBrokerUrl);
+                Console.WriteLine("Sending unsubscription request to: " + mainParentURL);
                 writeToLog("Subscriber " + _processName + " Unsubscribe " + topic);
 
                 request = new Message(MessageType.Unsubscribe, _site, _processName, topic, sendSequence);
                 request.Sender = _processURL;
-                siteBroker.addToQueue(request);
+                mainParent.addToQueue(request);
                 _subscriptionTopics.Remove(topic);
                 sendSequence++;
             }
@@ -181,8 +182,12 @@ namespace Subscriber {
 
         public void addBrokerURL(string url) {
             INode node = aquireConnection(url);
-            siteBrokerUrl = url;
-            siteBroker = node;
+            if(mainParent == null)
+            {
+                mainParent = node;
+                mainParentURL = url;
+            }
+            parents.Add(url, node);
         }
 
         public override void printNode() {
@@ -192,11 +197,10 @@ namespace Subscriber {
         public override string showNode() {
             String print = "Subscriber: " + _processName + " for " + _site + " active on " + _processURL + "\n";
             print += "Ordering: " + _ordering + "\n";
-            print += "\tConnected on broker:\n";
-            if (siteBrokerUrl != "") {
-                print += "\t\t";
-                print += siteBrokerUrl;
-                print += "\n";
+            print += "\tConnected on brokers:\n";
+            foreach (string broker in parents.Keys)
+            {
+                print += "\t\t" + broker + "\n";
             }
             print += "\tSubscribed to:\n";
             foreach (string topic in _subscriptionTopics) {
@@ -213,8 +217,8 @@ namespace Subscriber {
             //processNAme processURL site puppetMAsterURL ordering -b brokerURL
             string text = _processName + " " + _processURL + " " + _site + " " + _puppetMasterURL + " " + _ordering;
 
-            if (siteBrokerUrl != "") {
-                text += " -b " + siteBrokerUrl;
+            foreach(string url in parents.Keys) {
+                text += " -b " + url;
             }
 
             return text;

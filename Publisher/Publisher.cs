@@ -8,8 +8,9 @@ using System.Threading;
 
 namespace Publisher {
     public class Publisher : Node {
-        private string siteBrokerUrl = "";
-        private INode siteBroker;
+        private Dictionary<string, INode> parents = new Dictionary<string, INode>();
+        private string mainParentURL;
+        private INode mainParent;
         private List<string> _topics;
         private List<Message> _pubHistory;
         private Object _sendLock = new Object();
@@ -25,8 +26,12 @@ namespace Publisher {
 
         public void addBrokerURL(string url) {
             INode node = aquireConnection(url);
-            siteBrokerUrl = url;
-            siteBroker = node;
+            if(mainParent == null)
+            {
+                mainParent = node;
+                mainParentURL = url;
+            }
+            parents.Add(url, node);
         }
 
         public void addTopic(string topic) {
@@ -54,11 +59,11 @@ namespace Publisher {
                     pub.Sender = _processURL;
                     _pubHistory.Add(pub);
 
-                    if (siteBroker == null)
+                    if (mainParent == null)
                         Console.WriteLine("Failed to connect to broker");
                     else {
                         Console.WriteLine("Trying to send sequence #" + sequence);
-                        siteBroker.addToQueue(pub);
+                        mainParent.addToQueue(pub);
                         Console.WriteLine("PubEvent " + _processName + ", " + _processURL + ", " + topic + ", " + sequence);
                         this.writeToLog("PubEvent " + _processName + ", " + _processURL + ", " + topic + ", " + sequence);
                     }
@@ -76,8 +81,8 @@ namespace Publisher {
         public override string showNode() {
             string print = "Publisher: " + _processName + " for " + _site + " active on " + _processURL + "\n";
             print += "\tConnected on broker:\n";
-            if (siteBroker != null) {
-                print += "\t\t" + siteBroker.Url() + "\n";
+            if (mainParent != null) {
+                print += "\t\t" + mainParent.Url() + "\n";
             }
             print += "\tPublication Topics:\n";
             foreach (string topic in _topics) {
@@ -93,8 +98,8 @@ namespace Publisher {
         protected override string getArguments() {
             //processNAme processURL site puppetMAsterURL -b brokerURL
             string text = _processName + " " + _processURL + " " + _site + " " + _puppetMasterURL;
-            if (siteBrokerUrl != "") {
-                text += " -b " + siteBrokerUrl;
+            foreach(string url in parents.Keys) {
+                text += " -b " + url;
             }
             return text;
         }

@@ -19,6 +19,7 @@ namespace Broker {
         // Key: URL, Value: Node
         private Dictionary<string, INode> subscribers = new Dictionary<string, INode>();
         private Dictionary<string, INode> children = new Dictionary<string, INode>();
+        private Dictionary<string, INode> parents = new Dictionary<string, INode>();
         private Tuple<string, INode> parent;
 
         private bool _delayed = false;
@@ -53,19 +54,18 @@ namespace Broker {
             _nodeProcess.StartInfo.FileName = "..\\..\\..\\Broker\\bin\\Debug\\Broker.exe";
         }
 
-        public string getParentURL() {
-            if (parent != null) {
-                return parent.Item1;
-            } else {
-                return "";
-            }
+        public string getParentURL()
+        {
+            return parent.Item1;
         }
+
         public bool containsNode(string url) {
-            return (parent != null && parent.Item1 == url) || children.ContainsKey(url) || subscribers.ContainsKey(url);
+            return (parents.ContainsKey(url) || children.ContainsKey(url) || subscribers.ContainsKey(url));
         }
+
         public INode getNode(string url) {
-            if (parent != null && parent.Item1 == url) {
-                return parent.Item2;
+            if (parents.ContainsKey(url)) {
+                return parents[url];
             }
 
             if (children.ContainsKey(url)) {
@@ -89,7 +89,11 @@ namespace Broker {
         }
         public void addParentUrl(string url) {
             INode node = aquireConnection(url);
-            parent = new Tuple<string, INode>(url, node);
+            if(parent == null)
+            {
+                parent = new Tuple<string, INode>(url, node);
+            }
+            parents.Add(url, node);
         }
         public void addBackupUrl(string url)
         {
@@ -514,8 +518,9 @@ namespace Broker {
                 print += "\tRouting Policy: flooding\n";
             }
             print += "\tParent Broker URL(s):\n";
-            if (parent != null) {
-                print += "\t\t" + parent.Item1 + "\n";
+            foreach (string curl in parents.Keys)
+            {
+                print += "\t\t" + curl + "\n";
             }
 
             print += "\tChild Broker URL(s):\n";
